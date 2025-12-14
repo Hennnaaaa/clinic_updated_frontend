@@ -227,8 +227,7 @@ export default function NewPatient() {
                   </div>
                 )}
                   </div>
-                )}
-              </div>
+                
 
               <div>
                 <label className="label">Doctor Notes</label>
