@@ -3,7 +3,7 @@ import Head from 'next/head';
 import Layout from '../../components/layout/Layout';
 import ProtectedRoute from '../../components/common/ProtectedRoute';
 import api from '../../utils/api';
-import { FaPlus, FaEdit, FaTrash, FaSearch } from 'react-icons/fa';
+import { FaPlus, FaEdit, FaTrash, FaSearch, FaBoxOpen } from 'react-icons/fa';
 import { toast } from 'react-toastify';
 
 export default function AdminMedicines() {
@@ -34,6 +34,26 @@ export default function AdminMedicines() {
     } finally {
       setLoading(false);
     }
+  };
+
+  // Parse pack info from medicine name
+  const parsePackInfo = (name) => {
+    const packRegex = /^(.+?)\s*\(1 pack = (\d+)\s+(\w+)\)$/i;
+    const match = name.match(packRegex);
+    
+    if (match) {
+      return {
+        baseName: match[1].trim(),
+        packSize: parseInt(match[2]),
+        packUnit: match[3],
+        hasPackInfo: true
+      };
+    }
+    
+    return {
+      baseName: name,
+      hasPackInfo: false
+    };
   };
 
   const handleSubmit = async (e) => {
@@ -131,33 +151,69 @@ export default function AdminMedicines() {
                       <th>Name</th>
                       <th>Category</th>
                       <th>Quantity</th>
+                      <th>Pack Info</th>
                       <th>Status</th>
                       <th>Actions</th>
                     </tr>
                   </thead>
                   <tbody>
-                    {filteredMedicines.map((medicine) => (
-                      <tr key={medicine.id}>
-                        <td className="font-semibold">{medicine.name}</td>
-                        <td><span className="badge badge-info">{medicine.category}</span></td>
-                        <td>{medicine.quantity} {medicine.unit}</td>
-                        <td>
-                          {medicine.quantity <= medicine.reorderLevel ? (
-                            <span className="badge badge-warning">Low Stock</span>
-                          ) : (
-                            <span className="badge badge-success">In Stock</span>
-                          )}
-                        </td>
-                        <td className="space-x-2">
-                          <button onClick={() => handleEdit(medicine)} className="text-primary-600 hover:text-primary-800">
-                            <FaEdit />
-                          </button>
-                          <button onClick={() => handleDelete(medicine.id)} className="text-red-600 hover:text-red-800">
-                            <FaTrash />
-                          </button>
-                        </td>
-                      </tr>
-                    ))}
+                    {filteredMedicines.map((medicine) => {
+                      const packInfo = parsePackInfo(medicine.name);
+                      const totalUnits = packInfo.hasPackInfo ? medicine.quantity * packInfo.packSize : null;
+                      
+                      return (
+                        <tr key={medicine.id}>
+                          <td>
+                            <div>
+                              <p className="font-semibold">{packInfo.baseName}</p>
+                              {packInfo.hasPackInfo && (
+                                <p className="text-xs text-blue-600 mt-1">
+                                  <FaBoxOpen className="inline mr-1" />
+                                  {packInfo.packSize} {packInfo.packUnit}/pack
+                                </p>
+                              )}
+                            </div>
+                          </td>
+                          <td><span className="badge badge-info">{medicine.category}</span></td>
+                          <td>
+                            <div>
+                              <p className="font-bold">{medicine.quantity} {medicine.unit}</p>
+                              {totalUnits && (
+                                <p className="text-xs text-gray-600">
+                                  ({totalUnits.toLocaleString()} {packInfo.packUnit} total)
+                                </p>
+                              )}
+                            </div>
+                          </td>
+                          <td>
+                            {packInfo.hasPackInfo ? (
+                              <span className="text-xs bg-blue-100 text-blue-700 px-2 py-1 rounded">
+                                Pack Size: {packInfo.packSize}
+                              </span>
+                            ) : (
+                              <span className="text-xs text-gray-400">-</span>
+                            )}
+                          </td>
+                          <td>
+                            {medicine.quantity === 0 ? (
+                              <span className="badge badge-error">Out of Stock</span>
+                            ) : medicine.quantity <= medicine.reorderLevel ? (
+                              <span className="badge badge-warning">Low Stock</span>
+                            ) : (
+                              <span className="badge badge-success">In Stock</span>
+                            )}
+                          </td>
+                          <td className="space-x-2">
+                            <button onClick={() => handleEdit(medicine)} className="text-primary-600 hover:text-primary-800">
+                              <FaEdit />
+                            </button>
+                            <button onClick={() => handleDelete(medicine.id)} className="text-red-600 hover:text-red-800">
+                              <FaTrash />
+                            </button>
+                          </td>
+                        </tr>
+                      );
+                    })}
                   </tbody>
                 </table>
               </div>
@@ -174,6 +230,10 @@ export default function AdminMedicines() {
                   <div>
                     <label className="label">Medicine Name</label>
                     <input type="text" value={formData.name} onChange={(e) => setFormData({...formData, name: e.target.value})} className="input-field" required />
+                    <p className="text-xs text-gray-500 mt-1">
+                      Tip: For packaged medicines, use format: "Name (1 pack = X units)"<br />
+                      Example: "Tab Panadol (1 pack = 200 tablets)"
+                    </p>
                   </div>
                   <div>
                     <label className="label">Category</label>
@@ -187,6 +247,9 @@ export default function AdminMedicines() {
                     <div>
                       <label className="label">Unit</label>
                       <input type="text" value={formData.unit} onChange={(e) => setFormData({...formData, unit: e.target.value})} className="input-field" required />
+                      <p className="text-xs text-gray-500 mt-1">
+                        e.g., packs, bottles, tablets
+                      </p>
                     </div>
                   </div>
                   <div>

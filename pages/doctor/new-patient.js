@@ -19,7 +19,8 @@ export default function NewPatient() {
     diagnosis: '',
     prescribedMedicines: [],
     doctorNotes: '',
-    followUpDate: ''
+    followUpDate: '',
+    amountCharged: 0  // NEW FIELD
   });
   const [selectedMedicine, setSelectedMedicine] = useState({ 
     medicineId: '', 
@@ -37,6 +38,26 @@ export default function NewPatient() {
     } catch (error) {
       toast.error('Failed to load medicines');
     }
+  };
+
+  // Parse pack info from medicine name
+  const parsePackInfo = (name) => {
+    const packRegex = /^(.+?)\s*\(1 pack = (\d+)\s+(\w+)\)$/i;
+    const match = name.match(packRegex);
+    
+    if (match) {
+      return {
+        baseName: match[1].trim(),
+        packSize: parseInt(match[2]),
+        packUnit: match[3],
+        hasPackInfo: true
+      };
+    }
+    
+    return {
+      baseName: name,
+      hasPackInfo: false
+    };
   };
 
   const handleAddMedicine = () => {
@@ -161,7 +182,7 @@ export default function NewPatient() {
                 <textarea value={formData.diagnosis} onChange={(e) => setFormData({...formData, diagnosis: e.target.value})} className="input-field" rows="3"></textarea>
               </div>
 
-              {/* Prescribed Medicines - SIMPLIFIED */}
+              {/* Prescribed Medicines */}
               <div className="bg-blue-50 p-4 rounded-lg border-2 border-blue-200">
                 <label className="label text-lg font-bold text-blue-900">Prescribe Medicines * (Stock will be deducted automatically)</label>
                 <p className="text-sm text-gray-600 mb-3">Select medicine and enter quantity to prescribe</p>
@@ -173,11 +194,16 @@ export default function NewPatient() {
                     className="input-field text-lg"
                   >
                     <option value="">-- Select Medicine --</option>
-                    {medicines.map(med => (
-                      <option key={med.id} value={med.id} disabled={med.quantity === 0}>
-                        {med.name} - Stock: {med.quantity} {med.unit} {med.quantity === 0 ? '(OUT OF STOCK)' : ''}
-                      </option>
-                    ))}
+                    {medicines.map(med => {
+                      const packInfo = parsePackInfo(med.name);
+                      return (
+                        <option key={med.id} value={med.id} disabled={med.quantity === 0}>
+                          {packInfo.baseName} - Stock: {med.quantity} {med.unit}
+                          {packInfo.hasPackInfo && ` (${packInfo.packSize} ${packInfo.packUnit}/pack)`}
+                          {med.quantity === 0 ? ' (OUT OF STOCK)' : ''}
+                        </option>
+                      );
+                    })}
                   </select>
                   
                   <input 
@@ -202,32 +228,69 @@ export default function NewPatient() {
                 {formData.prescribedMedicines.length > 0 ? (
                   <div className="space-y-2 mt-4">
                     <p className="font-semibold text-green-700">✅ Prescribed Medicines ({formData.prescribedMedicines.length}):</p>
-                    {formData.prescribedMedicines.map((med, idx) => (
-                      <div key={idx} className="flex items-center justify-between p-4 bg-white rounded-lg border-2 border-green-300 shadow-sm">
-                        <div>
-                          <p className="font-bold text-lg text-gray-800">{idx + 1}. {med.name}</p>
-                          <p className="text-base text-gray-600">
-                            <span className="font-semibold text-green-700">Quantity: {med.quantity} {med.unit}</span>
-                            <span className="text-xs ml-2 text-gray-500">(Will be deducted from stock)</span>
-                          </p>
+                    {formData.prescribedMedicines.map((med, idx) => {
+                      const packInfo = parsePackInfo(med.name);
+                      const totalUnits = packInfo.hasPackInfo ? med.quantity * packInfo.packSize : null;
+                      
+                      return (
+                        <div key={idx} className="flex items-center justify-between p-4 bg-white rounded-lg border-2 border-green-300 shadow-sm">
+                          <div>
+                            <p className="font-bold text-lg text-gray-800">
+                              {idx + 1}. {packInfo.baseName}
+                            </p>
+                            {packInfo.hasPackInfo && (
+                              <p className="text-sm text-blue-600 font-medium mt-1">
+                                📦 {packInfo.packSize} {packInfo.packUnit} per pack
+                              </p>
+                            )}
+                            <p className="text-base text-gray-600 mt-1">
+                              <span className="font-semibold text-green-700">
+                                Quantity: {med.quantity} {med.unit}
+                              </span>
+                              {totalUnits && (
+                                <span className="ml-2 text-blue-700 font-bold">
+                                  (Total: {totalUnits} {packInfo.packUnit})
+                                </span>
+                              )}
+                              <span className="text-xs ml-2 text-gray-500">(Will be deducted from stock)</span>
+                            </p>
+                          </div>
+                          <button 
+                            type="button" 
+                            onClick={() => handleRemoveMedicine(idx)} 
+                            className="bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded-lg font-semibold"
+                          >
+                            Remove
+                          </button>
                         </div>
-                        <button 
-                          type="button" 
-                          onClick={() => handleRemoveMedicine(idx)} 
-                          className="bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded-lg font-semibold"
-                        >
-                          Remove
-                        </button>
-                      </div>
-                    ))}
+                      );
+                    })}
                   </div>
                 ) : (
                   <div className="text-center py-8 bg-gray-50 rounded-lg border-2 border-dashed border-gray-300">
                     <p className="text-gray-500">No medicines prescribed yet. Add at least one medicine.</p>
                   </div>
                 )}
-                  </div>
-                
+              </div>
+
+              {/* NEW: Amount Charged Field */}
+              <div className="bg-green-50 p-4 rounded-lg border-2 border-green-300">
+                <label className="label text-lg font-bold text-green-900">Amount Charged (Rs.)</label>
+                <p className="text-sm text-gray-600 mb-2">Enter the total amount charged to the patient</p>
+                <div className="flex items-center gap-3">
+                  <span className="text-2xl font-bold text-green-700">Rs.</span>
+                  <input 
+                    type="number" 
+                    step="0.01"
+                    min="0"
+                    value={formData.amountCharged} 
+                    onChange={(e) => setFormData({...formData, amountCharged: parseFloat(e.target.value) || 0})} 
+                    className="input-field text-xl font-bold" 
+                    placeholder="0.00"
+                  />
+                </div>
+                <p className="text-xs text-gray-500 mt-2">This amount will be recorded in the patient's record</p>
+              </div>
 
               <div>
                 <label className="label">Doctor Notes</label>
