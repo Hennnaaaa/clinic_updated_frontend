@@ -21,23 +21,55 @@ export default function AdminDashboard() {
 
   const fetchDashboardData = async () => {
     try {
+      console.log('Fetching dashboard data...');
+      
+      // Fetch patients and medicines
       const [patientsRes, medicinesRes] = await Promise.all([
         api.get('/patients?limit=5'),
         api.get('/medicines')
       ]);
 
+      console.log('Patients response:', patientsRes.data);
+      console.log('Medicines response:', medicinesRes.data);
+
       const medicines = medicinesRes.data;
       const lowStock = medicines.filter(m => m.quantity <= m.reorderLevel);
 
+      // Handle different response structures
+      let totalPatients = 0;
+      let recentPatients = [];
+
+      if (patientsRes.data.pagination) {
+        // Structure: { patients: [...], pagination: { total: X } }
+        totalPatients = patientsRes.data.pagination.total;
+        recentPatients = patientsRes.data.patients || [];
+      } else if (Array.isArray(patientsRes.data)) {
+        // Structure: [patients array]
+        totalPatients = patientsRes.data.length;
+        recentPatients = patientsRes.data.slice(0, 5);
+      } else if (patientsRes.data.patients) {
+        // Structure: { patients: [...] }
+        totalPatients = patientsRes.data.patients.length;
+        recentPatients = patientsRes.data.patients.slice(0, 5);
+      }
+
       setStats({
-        totalPatients: patientsRes.data.pagination.total,
+        totalPatients,
         totalMedicines: medicines.length,
         lowStockMedicines: lowStock.length,
-        recentPatients: patientsRes.data.patients
+        recentPatients
       });
+
+      console.log('Dashboard stats updated:', {
+        totalPatients,
+        totalMedicines: medicines.length,
+        lowStockMedicines: lowStock.length
+      });
+
     } catch (error) {
-      toast.error('Failed to load dashboard data');
-      console.error(error);
+      console.error('Dashboard fetch error:', error);
+      console.error('Error response:', error.response?.data);
+      toast.error(error.response?.data?.error || 'Failed to load dashboard data');
     } finally {
       setLoading(false);
     }
@@ -137,9 +169,11 @@ export default function AdminDashboard() {
                         <p className="text-sm text-gray-600">
                           {new Date(patient.visitDate).toLocaleDateString()}
                         </p>
-                        <p className="text-xs text-gray-500">
-                          Dr. {patient.doctor?.fullName}
-                        </p>
+                        {patient.doctor?.fullName && (
+                          <p className="text-xs text-gray-500">
+                            Dr. {patient.doctor.fullName}
+                          </p>
+                        )}
                       </div>
                     </div>
                   ))}

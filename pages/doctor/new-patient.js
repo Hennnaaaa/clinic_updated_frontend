@@ -275,20 +275,17 @@ export default function NewPatient() {
 
               {/* NEW: Amount Charged Field */}
               <div className="bg-green-50 p-4 rounded-lg border-2 border-green-300">
-                <label className="label text-lg font-bold text-green-900">Amount Charged (Rs.)</label>
+                <label className="label text-lg font-bold text-green-900">Amount Charged</label>
                 <p className="text-sm text-gray-600 mb-2">Enter the total amount charged to the patient</p>
-                <div className="flex items-center gap-3">
-                  <span className="text-2xl font-bold text-green-700">Rs.</span>
-                  <input 
-                    type="number" 
-                    step="0.01"
-                    min="0"
-                    value={formData.amountCharged} 
-                    onChange={(e) => setFormData({...formData, amountCharged: parseFloat(e.target.value) || 0})} 
-                    className="input-field text-xl font-bold" 
-                    placeholder="0.00"
-                  />
-                </div>
+                <input 
+                  type="number" 
+                  step="0.01"
+                  min="0"
+                  value={formData.amountCharged} 
+                  onChange={(e) => setFormData({...formData, amountCharged: parseFloat(e.target.value) || 0})} 
+                  className="input-field text-xl font-bold" 
+                  placeholder="0.00"
+                />
                 <p className="text-xs text-gray-500 mt-2">This amount will be recorded in the patient's record</p>
               </div>
 

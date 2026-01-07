@@ -17,13 +17,43 @@ export default function DoctorDashboard() {
 
   const fetchDashboardData = async () => {
     try {
+      console.log('Fetching doctor dashboard data...');
+      
       const response = await api.get('/patients?limit=5');
+      console.log('Patients response:', response.data);
+
+      // Handle different response structures
+      let totalPatients = 0;
+      let recentPatients = [];
+
+      if (response.data.pagination) {
+        // Structure: { patients: [...], pagination: { total: X } }
+        totalPatients = response.data.pagination.total;
+        recentPatients = response.data.patients || [];
+      } else if (Array.isArray(response.data)) {
+        // Structure: [patients array]
+        totalPatients = response.data.length;
+        recentPatients = response.data.slice(0, 5);
+      } else if (response.data.patients) {
+        // Structure: { patients: [...] }
+        totalPatients = response.data.patients.length;
+        recentPatients = response.data.patients.slice(0, 5);
+      }
+
       setStats({
-        totalPatients: response.data.pagination.total,
-        recentPatients: response.data.patients
+        totalPatients,
+        recentPatients
       });
+
+      console.log('Doctor dashboard stats updated:', {
+        totalPatients,
+        recentPatients: recentPatients.length
+      });
+
     } catch (error) {
-      toast.error('Failed to load dashboard data');
+      console.error('Doctor dashboard fetch error:', error);
+      console.error('Error response:', error.response?.data);
+      toast.error(error.response?.data?.error || 'Failed to load dashboard data');
     } finally {
       setLoading(false);
     }
