@@ -273,7 +273,7 @@ export default function AdminReports() {
     <ProtectedRoute allowedRoles={['admin']}>
       <Head><title>Patient Reports & Filters - Admin</title></Head>
       <Layout>
-        <div className="space-y-4 md:space-y-6">
+        <div className="space-y-4 md:space-y-6 pb-4 md:pb-6">
           {/* Filter Section */}
           <div className="card">
             <div className="card-header flex flex-col md:flex-row md:items-center justify-between gap-3">
@@ -460,8 +460,8 @@ export default function AdminReports() {
               <div className="grid grid-cols-5 gap-2 md:gap-4">
                 {Object.entries(stats.ageGroups).map(([group, count]) => (
                   <div key={group} className="text-center p-2 md:p-4 bg-gradient-to-br from-gray-50 to-gray-100 rounded-xl">
-                    <p className="text-lg md:text-2xl font-bold text-gray-700">{count}</p>
-                    <p className="text-[10px] md:text-xs text-gray-600">Age {group}</p>
+                    <p className="text-xl md:text-2xl font-bold text-gray-700">{count}</p>
+                    <p className="text-xs md:text-sm text-gray-600">Age {group}</p>
                   </div>
                 ))}
               </div>
@@ -479,8 +479,8 @@ export default function AdminReports() {
                   <div className="space-y-2">
                     {stats.topMedicines.map(([name, count], idx) => (
                       <div key={idx} className="flex items-center justify-between p-2 md:p-3 bg-gradient-to-r from-green-50 to-emerald-50 rounded-lg">
-                        <span className="font-medium text-gray-700 text-xs md:text-sm">{name}</span>
-                        <span className="badge badge-success text-xs">{count} times</span>
+                        <span className="font-medium text-gray-700 text-sm md:text-base">{name}</span>
+                        <span className="badge badge-success text-xs md:text-sm">{count} times</span>
                       </div>
                     ))}
                   </div>
@@ -499,8 +499,8 @@ export default function AdminReports() {
                   <div className="space-y-2">
                     {stats.commonSymptoms.map(([symptom, count], idx) => (
                       <div key={idx} className="flex items-center justify-between p-2 md:p-3 bg-gradient-to-r from-orange-50 to-yellow-50 rounded-lg">
-                        <span className="font-medium text-gray-700 capitalize text-xs md:text-sm">{symptom}</span>
-                        <span className="badge badge-warning text-xs">{count} times</span>
+                        <span className="font-medium text-gray-700 capitalize text-sm md:text-base">{symptom}</span>
+                        <span className="badge badge-warning text-xs md:text-sm">{count} times</span>
                       </div>
                     ))}
                   </div>
@@ -527,48 +527,48 @@ export default function AdminReports() {
                     <table className="w-full" style={{ minWidth: '1000px' }}>
                       <thead className="bg-gradient-to-r from-blue-600 to-indigo-600 text-white">
                         <tr>
-                          <th className="px-3 md:px-4 py-2 md:py-3 text-left text-xs md:text-sm whitespace-nowrap">Name</th>
-                          <th className="px-3 md:px-4 py-2 md:py-3 text-left text-xs md:text-sm whitespace-nowrap">Age/Gender</th>
-                          <th className="px-3 md:px-4 py-2 md:py-3 text-left text-xs md:text-sm whitespace-nowrap">Contact</th>
-                          <th className="px-3 md:px-4 py-2 md:py-3 text-left text-xs md:text-sm whitespace-nowrap">Symptoms</th>
-                          <th className="px-3 md:px-4 py-2 md:py-3 text-left text-xs md:text-sm whitespace-nowrap">Amount</th>
-                          <th className="px-3 md:px-4 py-2 md:py-3 text-left text-xs md:text-sm whitespace-nowrap">Medicines</th>
-                          <th className="px-3 md:px-4 py-2 md:py-3 text-left text-xs md:text-sm whitespace-nowrap">Visit Date</th>
-                          <th className="px-3 md:px-4 py-2 md:py-3 text-left text-xs md:text-sm whitespace-nowrap">Doctor</th>
-                          <th className="px-3 md:px-4 py-2 md:py-3 text-left text-xs md:text-sm whitespace-nowrap">Actions</th>
+                          <th className="px-3 md:px-4 py-3 md:py-4 text-left text-sm md:text-base whitespace-nowrap font-semibold">Name</th>
+                          <th className="px-3 md:px-4 py-3 md:py-4 text-left text-sm md:text-base whitespace-nowrap font-semibold">Age/Gender</th>
+                          <th className="px-3 md:px-4 py-3 md:py-4 text-left text-sm md:text-base whitespace-nowrap font-semibold">Contact</th>
+                          <th className="px-3 md:px-4 py-3 md:py-4 text-left text-sm md:text-base whitespace-nowrap font-semibold">Symptoms</th>
+                          <th className="px-3 md:px-4 py-3 md:py-4 text-left text-sm md:text-base whitespace-nowrap font-semibold">Amount</th>
+                          <th className="px-3 md:px-4 py-3 md:py-4 text-left text-sm md:text-base whitespace-nowrap font-semibold">Medicines</th>
+                          <th className="px-3 md:px-4 py-3 md:py-4 text-left text-sm md:text-base whitespace-nowrap font-semibold">Visit Date</th>
+                          <th className="px-3 md:px-4 py-3 md:py-4 text-left text-sm md:text-base whitespace-nowrap font-semibold">Doctor</th>
+                          <th className="px-3 md:px-4 py-3 md:py-4 text-left text-sm md:text-base whitespace-nowrap font-semibold">Actions</th>
                         </tr>
                       </thead>
                       <tbody className="divide-y divide-gray-200">
                         {currentPatients.map((patient) => (
                           <tr key={patient.id} className="hover:bg-gray-50">
-                            <td className="px-3 md:px-4 py-2 md:py-3 font-semibold text-xs md:text-sm whitespace-nowrap">{patient.name}</td>
-                            <td className="px-3 md:px-4 py-2 md:py-3 text-xs md:text-sm whitespace-nowrap">{patient.age} • {patient.gender}</td>
-                            <td className="px-3 md:px-4 py-2 md:py-3 text-xs md:text-sm whitespace-nowrap">{patient.contactNumber || 'N/A'}</td>
-                            <td className="px-3 md:px-4 py-2 md:py-3 text-xs md:text-sm max-w-[200px] truncate">{patient.symptoms || 'N/A'}</td>
-                            <td className="px-3 md:px-4 py-2 md:py-3 text-xs md:text-sm font-semibold text-green-600 whitespace-nowrap">
+                            <td className="px-3 md:px-4 py-3 md:py-4 font-semibold text-sm md:text-base whitespace-nowrap">{patient.name}</td>
+                            <td className="px-3 md:px-4 py-3 md:py-4 text-sm md:text-base whitespace-nowrap">{patient.age} • {patient.gender}</td>
+                            <td className="px-3 md:px-4 py-3 md:py-4 text-sm md:text-base whitespace-nowrap">{patient.contactNumber || 'N/A'}</td>
+                            <td className="px-3 md:px-4 py-3 md:py-4 text-sm md:text-base max-w-[200px] truncate">{patient.symptoms || 'N/A'}</td>
+                            <td className="px-3 md:px-4 py-3 md:py-4 text-sm md:text-base font-semibold text-green-600 whitespace-nowrap">
                               Rs. {patient.amountCharged || '0.00'}
                             </td>
-                            <td className="px-3 md:px-4 py-2 md:py-3">
+                            <td className="px-3 md:px-4 py-3 md:py-4">
                               {patient.prescribedMedicines && patient.prescribedMedicines.length > 0 ? (
                                 <div className="flex flex-wrap gap-1">
                                   {patient.prescribedMedicines.map((med, idx) => (
-                                    <span key={idx} className="inline-block bg-green-100 text-green-800 px-1.5 md:px-2 py-0.5 md:py-1 rounded text-[10px] md:text-xs whitespace-nowrap">
+                                    <span key={idx} className="inline-block bg-green-100 text-green-800 px-2 py-1 rounded text-xs md:text-sm whitespace-nowrap">
                                       {med.name} ({med.quantity})
                                     </span>
                                   ))}
                                 </div>
                               ) : (
-                                <span className="text-gray-400 text-xs italic">None</span>
+                                <span className="text-gray-400 text-sm italic">None</span>
                               )}
                             </td>
-                            <td className="px-3 md:px-4 py-2 md:py-3 text-xs md:text-sm whitespace-nowrap">{new Date(patient.visitDate).toLocaleDateString()}</td>
-                            <td className="px-3 md:px-4 py-2 md:py-3 text-xs md:text-sm whitespace-nowrap">{patient.doctor?.fullName || 'N/A'}</td>
-                            <td className="px-3 md:px-4 py-2 md:py-3 whitespace-nowrap">
+                            <td className="px-3 md:px-4 py-3 md:py-4 text-sm md:text-base whitespace-nowrap">{new Date(patient.visitDate).toLocaleDateString()}</td>
+                            <td className="px-3 md:px-4 py-3 md:py-4 text-sm md:text-base whitespace-nowrap">{patient.doctor?.fullName || 'N/A'}</td>
+                            <td className="px-3 md:px-4 py-3 md:py-4 whitespace-nowrap">
                               <button 
                                 onClick={() => viewPatientDetails(patient)}
-                                className="text-primary-600 hover:text-primary-800"
+                                className="text-primary-600 hover:text-primary-800 p-2"
                               >
-                                <FaEye className="text-base md:text-lg" />
+                                <FaEye className="text-xl md:text-2xl" />
                               </button>
                             </td>
                           </tr>
@@ -581,7 +581,7 @@ export default function AdminReports() {
                   {totalPages > 1 && (
                     <div className="mt-4 px-4 py-4 border-t border-gray-200 bg-gray-50 rounded-b-lg">
                       <div className="flex flex-col md:flex-row items-center justify-between gap-3">
-                        <div className="text-xs md:text-sm text-gray-700">
+                        <div className="text-sm md:text-base text-gray-700 font-medium">
                           Showing {indexOfFirstPatient + 1} to {Math.min(indexOfLastPatient, filteredPatients.length)} of {filteredPatients.length} patients
                         </div>
 
@@ -589,7 +589,7 @@ export default function AdminReports() {
                           <button
                             onClick={() => handlePageChange(currentPage - 1)}
                             disabled={currentPage === 1}
-                            className="px-3 py-1.5 text-sm border border-gray-300 rounded-lg hover:bg-gray-100 disabled:opacity-50 disabled:cursor-not-allowed"
+                            className="px-4 py-2 text-sm md:text-base border border-gray-300 rounded-lg hover:bg-gray-100 disabled:opacity-50 disabled:cursor-not-allowed"
                           >
                             <FaChevronLeft className="text-xs" />
                           </button>
@@ -637,7 +637,7 @@ export default function AdminReports() {
                           <button
                             onClick={() => handlePageChange(currentPage + 1)}
                             disabled={currentPage === totalPages}
-                            className="px-3 py-1.5 text-sm border border-gray-300 rounded-lg hover:bg-gray-100 disabled:opacity-50 disabled:cursor-not-allowed"
+                            className="px-4 py-2 text-sm md:text-base border border-gray-300 rounded-lg hover:bg-gray-100 disabled:opacity-50 disabled:cursor-not-allowed"
                           >
                             <FaChevronRight className="text-xs" />
                           </button>
@@ -686,7 +686,7 @@ export default function AdminReports() {
                   </div>
                   <div className="col-span-2">
                     <p className="text-xs md:text-sm text-gray-600">Amount Charged</p>
-                    <p className="font-bold text-base md:text-lg text-green-600">Rs. {selectedPatient.amountCharged || '0.00'}</p>
+                    <p className="font-bold text-base md:text-lg text-green-600"> {selectedPatient.amountCharged || '0.00'}</p>
                   </div>
                 </div>
 

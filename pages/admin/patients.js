@@ -214,37 +214,37 @@ export default function AdminPatients() {
                   <table className="w-full" style={{ minWidth: '900px' }}>
                     <thead className="bg-gradient-to-r from-blue-600 to-indigo-600 text-white">
                       <tr>
-                        <th className="px-3 md:px-4 py-2 md:py-3 text-left text-xs md:text-sm whitespace-nowrap">Name</th>
-                        <th className="px-3 md:px-4 py-2 md:py-3 text-left text-xs md:text-sm whitespace-nowrap">Age/Gender</th>
-                        <th className="px-3 md:px-4 py-2 md:py-3 text-left text-xs md:text-sm whitespace-nowrap">Contact</th>
-                        <th className="px-3 md:px-4 py-2 md:py-3 text-left text-xs md:text-sm whitespace-nowrap">Doctor</th>
-                        <th className="px-3 md:px-4 py-2 md:py-3 text-left text-xs md:text-sm whitespace-nowrap">Symptoms</th>
-                        <th className="px-3 md:px-4 py-2 md:py-3 text-left text-xs md:text-sm whitespace-nowrap">Amount</th>
-                        <th className="px-3 md:px-4 py-2 md:py-3 text-left text-xs md:text-sm whitespace-nowrap">Visit Date</th>
-                        <th className="px-3 md:px-4 py-2 md:py-3 text-left text-xs md:text-sm whitespace-nowrap">Actions</th>
+                        <th className="px-3 md:px-4 py-3 md:py-4 text-left text-sm md:text-base whitespace-nowrap font-semibold">Name</th>
+                        <th className="px-3 md:px-4 py-3 md:py-4 text-left text-sm md:text-base whitespace-nowrap font-semibold">Age/Gender</th>
+                        <th className="px-3 md:px-4 py-3 md:py-4 text-left text-sm md:text-base whitespace-nowrap font-semibold">Contact</th>
+                        <th className="px-3 md:px-4 py-3 md:py-4 text-left text-sm md:text-base whitespace-nowrap font-semibold">Doctor</th>
+                        <th className="px-3 md:px-4 py-3 md:py-4 text-left text-sm md:text-base whitespace-nowrap font-semibold">Symptoms</th>
+                        <th className="px-3 md:px-4 py-3 md:py-4 text-left text-sm md:text-base whitespace-nowrap font-semibold">Amount</th>
+                        <th className="px-3 md:px-4 py-3 md:py-4 text-left text-sm md:text-base whitespace-nowrap font-semibold">Visit Date</th>
+                        <th className="px-3 md:px-4 py-3 md:py-4 text-left text-sm md:text-base whitespace-nowrap font-semibold">Actions</th>
                       </tr>
                     </thead>
                     <tbody className="divide-y">
                       {patients.map((patient) => (
                         <tr key={patient.id} className="hover:bg-gray-50">
-                          <td className="px-3 md:px-4 py-2 md:py-3 text-xs md:text-sm font-medium whitespace-nowrap">{patient.name}</td>
-                          <td className="px-3 md:px-4 py-2 md:py-3 text-xs md:text-sm whitespace-nowrap">{patient.age} • {patient.gender}</td>
-                          <td className="px-3 md:px-4 py-2 md:py-3 text-xs md:text-sm whitespace-nowrap">{patient.contactNumber || 'N/A'}</td>
-                          <td className="px-3 md:px-4 py-2 md:py-3 text-xs md:text-sm whitespace-nowrap">
-                            <span className="px-2 py-1 rounded-full text-xs bg-purple-100 text-purple-800">
+                          <td className="px-3 md:px-4 py-3 md:py-4 text-sm md:text-base font-medium whitespace-nowrap">{patient.name}</td>
+                          <td className="px-3 md:px-4 py-3 md:py-4 text-sm md:text-base whitespace-nowrap">{patient.age} • {patient.gender}</td>
+                          <td className="px-3 md:px-4 py-3 md:py-4 text-sm md:text-base whitespace-nowrap">{patient.contactNumber || 'N/A'}</td>
+                          <td className="px-3 md:px-4 py-3 md:py-4 text-sm md:text-base whitespace-nowrap">
+                            <span className="px-2 py-1 rounded-full text-xs md:text-sm bg-purple-100 text-purple-800">
                               {patient.doctor?.fullName || 'N/A'}
                             </span>
                           </td>
-                          <td className="px-3 md:px-4 py-2 md:py-3 text-xs md:text-sm" style={{ maxWidth: '200px' }}>
+                          <td className="px-3 md:px-4 py-3 md:py-4 text-sm md:text-base" style={{ maxWidth: '200px' }}>
                             <div className="truncate">{patient.symptoms}</div>
                           </td>
-                          <td className="px-3 md:px-4 py-2 md:py-3 text-xs md:text-sm font-semibold text-green-600 whitespace-nowrap">
-                            Rs. {patient.amountCharged || '0.00'}
+                          <td className="px-3 md:px-4 py-3 md:py-4 text-sm md:text-base font-semibold text-green-600 whitespace-nowrap">
+                             {patient.amountCharged || '0.00'}
                           </td>
-                          <td className="px-3 md:px-4 py-2 md:py-3 text-xs md:text-sm whitespace-nowrap">{format(new Date(patient.visitDate), 'MMM dd, yyyy')}</td>
-                          <td className="px-3 md:px-4 py-2 md:py-3 whitespace-nowrap">
-                            <button onClick={() => handleViewDetails(patient)} className="text-blue-600 hover:text-blue-800 p-1 md:p-2">
-                              <FaEye className="text-base md:text-lg" />
+                          <td className="px-3 md:px-4 py-3 md:py-4 text-sm md:text-base whitespace-nowrap">{format(new Date(patient.visitDate), 'MMM dd, yyyy')}</td>
+                          <td className="px-3 md:px-4 py-3 md:py-4 whitespace-nowrap">
+                            <button onClick={() => handleViewDetails(patient)} className="text-blue-600 hover:text-blue-800 p-2">
+                              <FaEye className="text-xl md:text-2xl" />
                             </button>
                           </td>
                         </tr>
@@ -255,7 +255,7 @@ export default function AdminPatients() {
 
                 <div className="px-4 py-4 border-t bg-gray-50">
                   <div className="flex flex-col md:flex-row items-center justify-between gap-3">
-                    <div className="text-xs md:text-sm text-gray-700">
+                    <div className="text-sm md:text-base text-gray-700 font-medium">
                       Showing {((currentPage - 1) * limit) + 1} to {Math.min(currentPage * limit, totalPatients)} of {totalPatients}
                     </div>
                     <div className="flex items-center gap-2">

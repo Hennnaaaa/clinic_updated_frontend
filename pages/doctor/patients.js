@@ -315,37 +315,37 @@ export default function DoctorPatients() {
                   <table className="w-full" style={{ minWidth: '800px' }}>
                     <thead className="bg-gradient-to-r from-blue-600 to-indigo-600 text-white">
                       <tr>
-                        <th className="px-3 md:px-4 py-2 md:py-3 text-left text-xs md:text-sm font-semibold whitespace-nowrap">Name</th>
-                        <th className="px-3 md:px-4 py-2 md:py-3 text-left text-xs md:text-sm font-semibold whitespace-nowrap">Age/Gender</th>
-                        <th className="px-3 md:px-4 py-2 md:py-3 text-left text-xs md:text-sm font-semibold whitespace-nowrap">Contact</th>
-                        <th className="px-3 md:px-4 py-2 md:py-3 text-left text-xs md:text-sm font-semibold whitespace-nowrap">Symptoms</th>
-                        <th className="px-3 md:px-4 py-2 md:py-3 text-left text-xs md:text-sm font-semibold whitespace-nowrap">Amount</th>
-                        <th className="px-3 md:px-4 py-2 md:py-3 text-left text-xs md:text-sm font-semibold whitespace-nowrap">Visit Date</th>
-                        <th className="px-3 md:px-4 py-2 md:py-3 text-left text-xs md:text-sm font-semibold whitespace-nowrap">Actions</th>
+                        <th className="px-3 md:px-4 py-3 md:py-4 text-left text-sm md:text-base font-semibold whitespace-nowrap">Name</th>
+                        <th className="px-3 md:px-4 py-3 md:py-4 text-left text-sm md:text-base font-semibold whitespace-nowrap">Age/Gender</th>
+                        <th className="px-3 md:px-4 py-3 md:py-4 text-left text-sm md:text-base font-semibold whitespace-nowrap">Contact</th>
+                        <th className="px-3 md:px-4 py-3 md:py-4 text-left text-sm md:text-base font-semibold whitespace-nowrap">Symptoms</th>
+                        <th className="px-3 md:px-4 py-3 md:py-4 text-left text-sm md:text-base font-semibold whitespace-nowrap">Amount</th>
+                        <th className="px-3 md:px-4 py-3 md:py-4 text-left text-sm md:text-base font-semibold whitespace-nowrap">Visit Date</th>
+                        <th className="px-3 md:px-4 py-3 md:py-4 text-left text-sm md:text-base font-semibold whitespace-nowrap">Actions</th>
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-gray-200">
                       {patients.map((patient) => (
                         <tr key={patient.id} className="hover:bg-gray-50">
-                          <td className="px-3 md:px-4 py-2 md:py-3 text-xs md:text-sm font-medium whitespace-nowrap">{patient.name}</td>
-                          <td className="px-3 md:px-4 py-2 md:py-3 text-xs md:text-sm whitespace-nowrap">{patient.age} • {patient.gender}</td>
-                          <td className="px-3 md:px-4 py-2 md:py-3 text-xs md:text-sm whitespace-nowrap">{patient.contactNumber}</td>
-                          <td className="px-3 md:px-4 py-2 md:py-3 text-xs md:text-sm" style={{ maxWidth: '200px' }}>
+                          <td className="px-3 md:px-4 py-3 md:py-4 text-sm md:text-base font-medium whitespace-nowrap">{patient.name}</td>
+                          <td className="px-3 md:px-4 py-3 md:py-4 text-sm md:text-base whitespace-nowrap">{patient.age} • {patient.gender}</td>
+                          <td className="px-3 md:px-4 py-3 md:py-4 text-sm md:text-base whitespace-nowrap">{patient.contactNumber}</td>
+                          <td className="px-3 md:px-4 py-3 md:py-4 text-sm md:text-base" style={{ maxWidth: '200px' }}>
                             <div className="truncate">{patient.symptoms}</div>
                           </td>
-                          <td className="px-3 md:px-4 py-2 md:py-3 text-xs md:text-sm font-semibold text-green-600 whitespace-nowrap">
-                            Rs. {patient.amountCharged ? patient.amountCharged : '0.00'}
+                          <td className="px-3 md:px-4 py-3 md:py-4 text-sm md:text-base font-semibold text-green-600 whitespace-nowrap">
+                            {patient.amountCharged ? patient.amountCharged : '0.00'}
                           </td>
-                          <td className="px-3 md:px-4 py-2 md:py-3 text-xs md:text-sm whitespace-nowrap">
+                          <td className="px-3 md:px-4 py-3 md:py-4 text-sm md:text-base whitespace-nowrap">
                             {format(new Date(patient.visitDate), 'MMM dd, yyyy')}
                           </td>
-                          <td className="px-3 md:px-4 py-2 md:py-3 whitespace-nowrap">
+                          <td className="px-3 md:px-4 py-3 md:py-4 whitespace-nowrap">
                             <button
                               onClick={() => handleEditClick(patient)}
-                              className="text-blue-600 hover:text-blue-800 p-1 md:p-2"
+                              className="text-blue-600 hover:text-blue-800 p-2"
                               title="Edit Patient"
                             >
-                              <FaEdit className="text-base md:text-lg" />
+                              <FaEdit className="text-xl md:text-2xl" />
                             </button>
                           </td>
                         </tr>
@@ -357,7 +357,7 @@ export default function DoctorPatients() {
                 {/* Pagination */}
                 <div className="px-4 py-4 border-t border-gray-200 bg-gray-50">
                   <div className="flex flex-col md:flex-row items-center justify-between gap-3">
-                    <div className="text-xs md:text-sm text-gray-700">
+                    <div className="text-sm md:text-base text-gray-700 font-medium">
                       Showing {((currentPage - 1) * limit) + 1} to {Math.min(currentPage * limit, totalPatients)} of {totalPatients} patients
                     </div>
 
@@ -365,7 +365,7 @@ export default function DoctorPatients() {
                       <button
                         onClick={() => handlePageChange(currentPage - 1)}
                         disabled={currentPage === 1}
-                        className="px-3 py-1.5 text-sm border border-gray-300 rounded-lg hover:bg-gray-100 disabled:opacity-50 disabled:cursor-not-allowed"
+                        className="px-4 py-2 text-sm md:text-base border border-gray-300 rounded-lg hover:bg-gray-100 disabled:opacity-50 disabled:cursor-not-allowed"
                       >
                         <FaChevronLeft className="text-xs" />
                       </button>
@@ -375,7 +375,7 @@ export default function DoctorPatients() {
                           <>
                             <button
                               onClick={() => handlePageChange(1)}
-                              className="px-3 py-1.5 text-sm border border-gray-300 rounded-lg hover:bg-gray-100"
+                              className="px-4 py-2 text-sm md:text-base border border-gray-300 rounded-lg hover:bg-gray-100"
                             >
                               1
                             </button>
@@ -387,7 +387,7 @@ export default function DoctorPatients() {
                           <button
                             key={page}
                             onClick={() => handlePageChange(page)}
-                            className={`px-3 py-1.5 text-sm border rounded-lg ${
+                            className={`px-4 py-2 text-sm md:text-base border rounded-lg ${
                               currentPage === page
                                 ? 'bg-blue-600 text-white border-blue-600'
                                 : 'border-gray-300 hover:bg-gray-100'
@@ -402,7 +402,7 @@ export default function DoctorPatients() {
                             {currentPage < totalPages - 3 && <span className="px-2 py-1.5 text-sm">...</span>}
                             <button
                               onClick={() => handlePageChange(totalPages)}
-                              className="px-3 py-1.5 text-sm border border-gray-300 rounded-lg hover:bg-gray-100"
+                              className="px-4 py-2 text-sm md:text-base border border-gray-300 rounded-lg hover:bg-gray-100"
                             >
                               {totalPages}
                             </button>
@@ -413,7 +413,7 @@ export default function DoctorPatients() {
                       <button
                         onClick={() => handlePageChange(currentPage + 1)}
                         disabled={currentPage === totalPages}
-                        className="px-3 py-1.5 text-sm border border-gray-300 rounded-lg hover:bg-gray-100 disabled:opacity-50 disabled:cursor-not-allowed"
+                        className="px-4 py-2 text-sm md:text-base border border-gray-300 rounded-lg hover:bg-gray-100 disabled:opacity-50 disabled:cursor-not-allowed"
                       >
                         <FaChevronRight className="text-xs" />
                       </button>
