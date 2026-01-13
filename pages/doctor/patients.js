@@ -17,18 +17,15 @@ export default function DoctorPatients() {
   const [searchTerm, setSearchTerm] = useState('');
   const [showFilters, setShowFilters] = useState(false);
   
-  // Edit Modal State
   const [showEditModal, setShowEditModal] = useState(false);
   const [editingPatient, setEditingPatient] = useState(null);
   const [saving, setSaving] = useState(false);
   
-  // Pagination
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
   const [totalPatients, setTotalPatients] = useState(0);
   const limit = 20;
   
-  // Filters
   const [filters, setFilters] = useState({
     gender: '',
     minAge: '',
@@ -134,7 +131,6 @@ export default function DoctorPatients() {
     return pages;
   };
 
-  // Edit Patient Functions
   const handleEditClick = (patient) => {
     setEditingPatient({...patient});
     setShowEditModal(true);
@@ -158,7 +154,7 @@ export default function DoctorPatients() {
       toast.success('Patient updated successfully');
       setShowEditModal(false);
       setEditingPatient(null);
-      fetchPatients(); // Refresh the list
+      fetchPatients();
     } catch (error) {
       console.error('Error updating patient:', error);
       toast.error('Failed to update patient');
@@ -189,7 +185,6 @@ export default function DoctorPatients() {
     <div className="min-h-screen flex flex-col bg-gradient-to-br from-blue-50 to-indigo-100">
       <div className="flex-1 p-3 md:p-6">
         <div className="max-w-7xl mx-auto">
-          {/* Header */}
           <div className="mb-4 md:mb-6">
             <h1 className="text-2xl md:text-3xl font-bold text-gray-800 mb-2">My Patients</h1>
             <p className="text-sm md:text-base text-gray-600">
@@ -197,10 +192,8 @@ export default function DoctorPatients() {
             </p>
           </div>
 
-          {/* Search and Filter Bar */}
           <div className="bg-white rounded-lg shadow-md p-3 md:p-4 mb-4">
             <div className="flex flex-col md:flex-row gap-3">
-              {/* Search */}
               <div className="flex-1 relative">
                 <FaSearch className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 text-sm md:text-base" />
                 <input
@@ -212,7 +205,6 @@ export default function DoctorPatients() {
                 />
               </div>
               
-              {/* Filter Button */}
               <button
                 onClick={() => setShowFilters(!showFilters)}
                 className="flex items-center justify-center gap-2 px-4 py-2 md:py-2.5 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition text-sm md:text-base whitespace-nowrap"
@@ -223,7 +215,6 @@ export default function DoctorPatients() {
               </button>
             </div>
 
-            {/* Filter Panel */}
             {showFilters && (
               <div className="mt-4 pt-4 border-t border-gray-200">
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
@@ -307,7 +298,7 @@ export default function DoctorPatients() {
             )}
           </div>
 
-          {/* Patients Table */}
+          {/* Table Container - Scroll ONLY the table, not the page */}
           <div className="bg-white rounded-lg shadow-md overflow-hidden">
             {loading ? (
               <div className="flex items-center justify-center p-8 md:p-12">
@@ -319,70 +310,42 @@ export default function DoctorPatients() {
               </div>
             ) : (
               <>
-                {/* Mobile View */}
-                <div className="md:hidden">
-                  {patients.map((patient) => (
-                    <div key={patient.id} className="border-b border-gray-200 p-4">
-                      <div className="flex justify-between items-start mb-2">
-                        <div>
-                          <h3 className="font-semibold text-base text-gray-900">{patient.name}</h3>
-                          <p className="text-sm text-gray-600">{patient.age} • {patient.gender}</p>
-                          <p className="text-xs text-gray-500">{patient.contactNumber}</p>
-                        </div>
-                        <button
-                          onClick={() => handleEditClick(patient)}
-                          className="px-3 py-1.5 bg-blue-600 text-white rounded-lg text-sm hover:bg-blue-700"
-                        >
-                          Edit
-                        </button>
-                      </div>
-                      <p className="text-sm text-gray-700 mb-1">
-                        <span className="font-medium">Symptoms:</span> {patient.symptoms}
-                      </p>
-                      <p className="text-sm text-gray-700 mb-1">
-                        <span className="font-medium">Amount:</span> Rs. {patient.amountCharged ? patient.amountCharged : '0.00'}
-                      </p>
-                      <p className="text-xs text-gray-500">
-                        {format(new Date(patient.visitDate), 'MMM dd, yyyy')}
-                      </p>
-                    </div>
-                  ))}
-                </div>
-
-                {/* Desktop View */}
-                <div className="hidden md:block overflow-x-auto">
-                  <table className="w-full">
+                {/* Contained Horizontal Scroll - Table ONLY */}
+                <div className="overflow-x-auto overflow-y-visible">
+                  <table className="w-full" style={{ minWidth: '800px' }}>
                     <thead className="bg-gradient-to-r from-blue-600 to-indigo-600 text-white">
                       <tr>
-                        <th className="px-4 py-3 text-left text-sm font-semibold">Name</th>
-                        <th className="px-4 py-3 text-left text-sm font-semibold">Age/Gender</th>
-                        <th className="px-4 py-3 text-left text-sm font-semibold">Contact</th>
-                        <th className="px-4 py-3 text-left text-sm font-semibold">Symptoms</th>
-                        <th className="px-4 py-3 text-left text-sm font-semibold">Amount</th>
-                        <th className="px-4 py-3 text-left text-sm font-semibold">Visit Date</th>
-                        <th className="px-4 py-3 text-left text-sm font-semibold">Actions</th>
+                        <th className="px-3 md:px-4 py-2 md:py-3 text-left text-xs md:text-sm font-semibold whitespace-nowrap">Name</th>
+                        <th className="px-3 md:px-4 py-2 md:py-3 text-left text-xs md:text-sm font-semibold whitespace-nowrap">Age/Gender</th>
+                        <th className="px-3 md:px-4 py-2 md:py-3 text-left text-xs md:text-sm font-semibold whitespace-nowrap">Contact</th>
+                        <th className="px-3 md:px-4 py-2 md:py-3 text-left text-xs md:text-sm font-semibold whitespace-nowrap">Symptoms</th>
+                        <th className="px-3 md:px-4 py-2 md:py-3 text-left text-xs md:text-sm font-semibold whitespace-nowrap">Amount</th>
+                        <th className="px-3 md:px-4 py-2 md:py-3 text-left text-xs md:text-sm font-semibold whitespace-nowrap">Visit Date</th>
+                        <th className="px-3 md:px-4 py-2 md:py-3 text-left text-xs md:text-sm font-semibold whitespace-nowrap">Actions</th>
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-gray-200">
                       {patients.map((patient) => (
                         <tr key={patient.id} className="hover:bg-gray-50">
-                          <td className="px-4 py-3 text-sm font-medium">{patient.name}</td>
-                          <td className="px-4 py-3 text-sm">{patient.age} • {patient.gender}</td>
-                          <td className="px-4 py-3 text-sm">{patient.contactNumber}</td>
-                          <td className="px-4 py-3 text-sm max-w-xs truncate">{patient.symptoms}</td>
-                          <td className="px-4 py-3 text-sm font-semibold text-green-600">
-                            Rs. {patient.amountCharged ? patient.amountCharged: '0.00'}
+                          <td className="px-3 md:px-4 py-2 md:py-3 text-xs md:text-sm font-medium whitespace-nowrap">{patient.name}</td>
+                          <td className="px-3 md:px-4 py-2 md:py-3 text-xs md:text-sm whitespace-nowrap">{patient.age} • {patient.gender}</td>
+                          <td className="px-3 md:px-4 py-2 md:py-3 text-xs md:text-sm whitespace-nowrap">{patient.contactNumber}</td>
+                          <td className="px-3 md:px-4 py-2 md:py-3 text-xs md:text-sm" style={{ maxWidth: '200px' }}>
+                            <div className="truncate">{patient.symptoms}</div>
                           </td>
-                          <td className="px-4 py-3 text-sm">
+                          <td className="px-3 md:px-4 py-2 md:py-3 text-xs md:text-sm font-semibold text-green-600 whitespace-nowrap">
+                            Rs. {patient.amountCharged ? patient.amountCharged : '0.00'}
+                          </td>
+                          <td className="px-3 md:px-4 py-2 md:py-3 text-xs md:text-sm whitespace-nowrap">
                             {format(new Date(patient.visitDate), 'MMM dd, yyyy')}
                           </td>
-                          <td className="px-4 py-3">
+                          <td className="px-3 md:px-4 py-2 md:py-3 whitespace-nowrap">
                             <button
                               onClick={() => handleEditClick(patient)}
-                              className="text-blue-600 hover:text-blue-800 p-2"
+                              className="text-blue-600 hover:text-blue-800 p-1 md:p-2"
                               title="Edit Patient"
                             >
-                              <FaEdit className="text-lg" />
+                              <FaEdit className="text-base md:text-lg" />
                             </button>
                           </td>
                         </tr>
@@ -463,61 +426,47 @@ export default function DoctorPatients() {
         </div>
       </div>
 
-      {/* Edit Patient Modal */}
+      {/* Edit Modal - Same as before */}
       {showEditModal && editingPatient && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-lg shadow-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
-            {/* Modal Header */}
-            <div className="sticky top-0 bg-gradient-to-r from-blue-600 to-indigo-600 text-white p-4 flex justify-between items-center">
-              <h2 className="text-xl font-bold">Edit Patient Record</h2>
-              <button
-                onClick={() => setShowEditModal(false)}
-                className="text-white hover:text-gray-200"
-              >
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4 overflow-y-auto">
+          <div className="bg-white rounded-lg shadow-xl max-w-2xl w-full my-8">
+            <div className="sticky top-0 bg-gradient-to-r from-blue-600 to-indigo-600 text-white p-4 flex justify-between items-center rounded-t-lg">
+              <h2 className="text-lg md:text-xl font-bold">Edit Patient Record</h2>
+              <button onClick={() => setShowEditModal(false)} className="text-white hover:text-gray-200">
                 <FaTimes className="text-xl" />
               </button>
             </div>
 
-            {/* Modal Body */}
-            <div className="p-6">
+            <div className="p-4 md:p-6 max-h-[70vh] overflow-y-auto">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                {/* Name */}
                 <div className="md:col-span-2">
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Patient Name *
-                  </label>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Patient Name *</label>
                   <input
                     type="text"
                     value={editingPatient.name}
                     onChange={(e) => handleEditChange('name', e.target.value)}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 text-sm md:text-base"
                     required
                   />
                 </div>
 
-                {/* Age */}
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Age *
-                  </label>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Age *</label>
                   <input
                     type="number"
                     value={editingPatient.age}
                     onChange={(e) => handleEditChange('age', e.target.value)}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 text-sm md:text-base"
                     required
                   />
                 </div>
 
-                {/* Gender */}
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Gender *
-                  </label>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Gender *</label>
                   <select
                     value={editingPatient.gender}
                     onChange={(e) => handleEditChange('gender', e.target.value)}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 text-sm md:text-base"
                     required
                   >
                     <option value="Male">Male</option>
@@ -526,105 +475,81 @@ export default function DoctorPatients() {
                   </select>
                 </div>
 
-                {/* Contact */}
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Contact Number
-                  </label>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Contact Number</label>
                   <input
                     type="text"
                     value={editingPatient.contactNumber || ''}
                     onChange={(e) => handleEditChange('contactNumber', e.target.value)}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 text-sm md:text-base"
                   />
                 </div>
 
-                {/* Amount Charged */}
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Amount Charged (Rs.)
-                  </label>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Amount Charged (Rs.)</label>
                   <input
                     type="number"
                     step="0.01"
                     value={editingPatient.amountCharged || 0}
                     onChange={(e) => handleEditChange('amountCharged', parseFloat(e.target.value) || 0)}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 text-sm md:text-base"
                   />
                 </div>
 
-                {/* Address */}
                 <div className="md:col-span-2">
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Address
-                  </label>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Address</label>
                   <input
                     type="text"
                     value={editingPatient.address || ''}
                     onChange={(e) => handleEditChange('address', e.target.value)}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 text-sm md:text-base"
                   />
                 </div>
 
-                {/* Symptoms */}
                 <div className="md:col-span-2">
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Symptoms
-                  </label>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Symptoms</label>
                   <textarea
                     value={editingPatient.symptoms}
                     onChange={(e) => handleEditChange('symptoms', e.target.value)}
                     rows={2}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 text-sm md:text-base"
                   />
                 </div>
 
-                {/* Diagnosis */}
                 <div className="md:col-span-2">
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Diagnosis
-                  </label>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Diagnosis</label>
                   <textarea
                     value={editingPatient.diagnosis || ''}
                     onChange={(e) => handleEditChange('diagnosis', e.target.value)}
                     rows={2}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 text-sm md:text-base"
                   />
                 </div>
 
-                {/* Doctor Notes */}
                 <div className="md:col-span-2">
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Doctor Notes
-                  </label>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Doctor Notes</label>
                   <textarea
                     value={editingPatient.doctorNotes || ''}
                     onChange={(e) => handleEditChange('doctorNotes', e.target.value)}
                     rows={2}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 text-sm md:text-base"
                   />
                 </div>
 
-                {/* Follow-up Date */}
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Follow-up Date
-                  </label>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Follow-up Date</label>
                   <input
                     type="date"
                     value={editingPatient.followUpDate ? editingPatient.followUpDate.split('T')[0] : ''}
                     onChange={(e) => handleEditChange('followUpDate', e.target.value)}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 text-sm md:text-base"
                   />
                 </div>
               </div>
 
-              {/* Medicines Section (Read-only for now) */}
               {editingPatient.prescribedMedicines && editingPatient.prescribedMedicines.length > 0 && (
                 <div className="mt-4">
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Prescribed Medicines
-                  </label>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Prescribed Medicines</label>
                   <div className="bg-gray-50 p-3 rounded-lg">
                     {editingPatient.prescribedMedicines.map((med, index) => (
                       <div key={index} className="text-sm mb-1">
@@ -636,18 +561,17 @@ export default function DoctorPatients() {
               )}
             </div>
 
-            {/* Modal Footer */}
-            <div className="sticky bottom-0 bg-gray-50 px-6 py-4 flex gap-3 justify-end border-t">
+            <div className="sticky bottom-0 bg-gray-50 px-4 md:px-6 py-4 flex gap-3 justify-end border-t rounded-b-lg">
               <button
                 onClick={() => setShowEditModal(false)}
-                className="px-6 py-2 border border-gray-300 rounded-lg hover:bg-gray-100 transition"
+                className="px-4 md:px-6 py-2 border border-gray-300 rounded-lg hover:bg-gray-100 transition text-sm md:text-base"
                 disabled={saving}
               >
                 Cancel
               </button>
               <button
                 onClick={handleSaveEdit}
-                className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition disabled:opacity-50"
+                className="px-4 md:px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition disabled:opacity-50 text-sm md:text-base"
                 disabled={saving}
               >
                 {saving ? 'Saving...' : 'Save Changes'}
@@ -656,25 +580,8 @@ export default function DoctorPatients() {
           </div>
         </div>
       )}
-
-      {/* Footer */}
-      <footer className="bg-white border-t border-gray-200 py-4 mt-auto">
-        <div className="max-w-7xl mx-auto px-4 text-center">
-          <p className="text-xs md:text-sm text-gray-600">
-            © 2024 Begum Sahib Noor Zaman Sahulat Dispensary. All rights reserved.
-          </p>
-        </div>
-      </footer>
     </div>
        </Layout>
     </ProtectedRoute>
   );
 }
-
-
-
-
-
-
-
-

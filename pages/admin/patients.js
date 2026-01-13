@@ -1,9 +1,10 @@
+// Same structure as doctor-patients but for admin - only key differences shown
 import { useState, useEffect } from 'react';
 import { useAuth } from '../../context/AuthContext';
 import { useRouter } from 'next/router';
 import axios from 'axios';
 import { toast } from 'react-toastify';
-import { FaSearch, FaFilter, FaTimes, FaChevronLeft, FaChevronRight, FaEye, FaDownload } from 'react-icons/fa';
+import { FaSearch, FaFilter, FaTimes, FaChevronLeft, FaChevronRight, FaEye } from 'react-icons/fa';
 import { format } from 'date-fns';
 import ProtectedRoute from '../../components/common/ProtectedRoute';
 import Head from 'next/head';
@@ -144,12 +145,12 @@ export default function AdminPatients() {
                   placeholder="Search patients..."
                   value={searchTerm}
                   onChange={(e) => handleSearch(e.target.value)}
-                  className="w-full pl-10 pr-4 py-2 md:py-2.5 border rounded-lg focus:ring-2 focus:ring-blue-500"
+                  className="w-full pl-10 pr-4 py-2 md:py-2.5 border rounded-lg focus:ring-2 focus:ring-blue-500 text-sm md:text-base"
                 />
               </div>
               <button
                 onClick={() => setShowFilters(!showFilters)}
-                className="flex items-center justify-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
+                className="flex items-center justify-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 text-sm md:text-base"
               >
                 <FaFilter /> Filters {showFilters && <FaTimes />}
               </button>
@@ -159,37 +160,37 @@ export default function AdminPatients() {
               <div className="mt-4 pt-4 border-t">
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
                   <div>
-                    <label className="block text-sm font-medium mb-1">Gender</label>
+                    <label className="block text-xs md:text-sm font-medium mb-1">Gender</label>
                     <select value={filters.gender} onChange={(e) => handleFilterChange('gender', e.target.value)} 
-                      className="w-full px-3 py-2 border rounded-lg">
+                      className="w-full px-3 py-2 border rounded-lg text-sm md:text-base">
                       <option value="">All</option><option value="Male">Male</option>
                       <option value="Female">Female</option><option value="Other">Other</option>
                     </select>
                   </div>
                   <div>
-                    <label className="block text-sm font-medium mb-1">Min Age</label>
+                    <label className="block text-xs md:text-sm font-medium mb-1">Min Age</label>
                     <input type="number" value={filters.minAge} onChange={(e) => handleFilterChange('minAge', e.target.value)}
-                      className="w-full px-3 py-2 border rounded-lg" />
+                      className="w-full px-3 py-2 border rounded-lg text-sm md:text-base" />
                   </div>
                   <div>
-                    <label className="block text-sm font-medium mb-1">Max Age</label>
+                    <label className="block text-xs md:text-sm font-medium mb-1">Max Age</label>
                     <input type="number" value={filters.maxAge} onChange={(e) => handleFilterChange('maxAge', e.target.value)}
-                      className="w-full px-3 py-2 border rounded-lg" />
+                      className="w-full px-3 py-2 border rounded-lg text-sm md:text-base" />
                   </div>
                   <div>
-                    <label className="block text-sm font-medium mb-1">From Date</label>
+                    <label className="block text-xs md:text-sm font-medium mb-1">From Date</label>
                     <input type="date" value={filters.startDate} onChange={(e) => handleFilterChange('startDate', e.target.value)}
-                      className="w-full px-3 py-2 border rounded-lg" />
+                      className="w-full px-3 py-2 border rounded-lg text-sm md:text-base" />
                   </div>
                   <div>
-                    <label className="block text-sm font-medium mb-1">To Date</label>
+                    <label className="block text-xs md:text-sm font-medium mb-1">To Date</label>
                     <input type="date" value={filters.endDate} onChange={(e) => handleFilterChange('endDate', e.target.value)}
-                      className="w-full px-3 py-2 border rounded-lg" />
+                      className="w-full px-3 py-2 border rounded-lg text-sm md:text-base" />
                   </div>
                   <div>
-                    <label className="block text-sm font-medium mb-1">Symptoms</label>
+                    <label className="block text-xs md:text-sm font-medium mb-1">Symptoms</label>
                     <input type="text" value={filters.symptoms} onChange={(e) => handleFilterChange('symptoms', e.target.value)}
-                      placeholder="Search symptoms" className="w-full px-3 py-2 border rounded-lg" />
+                      placeholder="Search symptoms" className="w-full px-3 py-2 border rounded-lg text-sm md:text-base" />
                   </div>
                 </div>
                 <div className="mt-3 flex justify-end">
@@ -201,6 +202,7 @@ export default function AdminPatients() {
             )}
           </div>
 
+          {/* Table Container - Contained Scroll */}
           <div className="bg-white rounded-lg shadow-md overflow-hidden">
             {loading ? (
               <div className="flex items-center justify-center p-12"><div className="spinner"></div></div>
@@ -208,61 +210,41 @@ export default function AdminPatients() {
               <div className="text-center p-12"><p className="text-lg text-gray-600">No patients found</p></div>
             ) : (
               <>
-                {/* Mobile View */}
-                <div className="md:hidden">
-                  {patients.map((patient) => (
-                    <div key={patient.id} className="border-b p-4">
-                      <div className="flex justify-between mb-2">
-                        <div>
-                          <h3 className="font-semibold text-gray-900">{patient.name}</h3>
-                          <p className="text-sm text-gray-600">{patient.age} • {patient.gender}</p>
-                          <p className="text-xs text-gray-500">{patient.contactNumber}</p>
-                        </div>
-                        <button onClick={() => handleViewDetails(patient)} 
-                          className="px-3 py-1.5 bg-blue-600 text-white rounded-lg text-sm">View</button>
-                      </div>
-                      <p className="text-sm mb-1"><strong>Doctor:</strong> {patient.doctor?.fullName || 'N/A'}</p>
-                      <p className="text-sm mb-1"><strong>Symptoms:</strong> {patient.symptoms}</p>
-                      <p className="text-sm mb-1"><strong>Amount:</strong> Rs. {patient.amountCharged|| '0.00'}</p>
-                      <p className="text-xs text-gray-500">{format(new Date(patient.visitDate), 'MMM dd, yyyy')}</p>
-                    </div>
-                  ))}
-                </div>
-
-                {/* Desktop View */}
-                <div className="hidden md:block overflow-x-auto">
-                  <table className="w-full">
+                <div className="overflow-x-auto overflow-y-visible">
+                  <table className="w-full" style={{ minWidth: '900px' }}>
                     <thead className="bg-gradient-to-r from-blue-600 to-indigo-600 text-white">
                       <tr>
-                        <th className="px-4 py-3 text-left text-sm">Name</th>
-                        <th className="px-4 py-3 text-left text-sm">Age/Gender</th>
-                        <th className="px-4 py-3 text-left text-sm">Contact</th>
-                        <th className="px-4 py-3 text-left text-sm">Doctor</th>
-                        <th className="px-4 py-3 text-left text-sm">Symptoms</th>
-                        <th className="px-4 py-3 text-left text-sm">Amount</th>
-                        <th className="px-4 py-3 text-left text-sm">Visit Date</th>
-                        <th className="px-4 py-3 text-left text-sm">Actions</th>
+                        <th className="px-3 md:px-4 py-2 md:py-3 text-left text-xs md:text-sm whitespace-nowrap">Name</th>
+                        <th className="px-3 md:px-4 py-2 md:py-3 text-left text-xs md:text-sm whitespace-nowrap">Age/Gender</th>
+                        <th className="px-3 md:px-4 py-2 md:py-3 text-left text-xs md:text-sm whitespace-nowrap">Contact</th>
+                        <th className="px-3 md:px-4 py-2 md:py-3 text-left text-xs md:text-sm whitespace-nowrap">Doctor</th>
+                        <th className="px-3 md:px-4 py-2 md:py-3 text-left text-xs md:text-sm whitespace-nowrap">Symptoms</th>
+                        <th className="px-3 md:px-4 py-2 md:py-3 text-left text-xs md:text-sm whitespace-nowrap">Amount</th>
+                        <th className="px-3 md:px-4 py-2 md:py-3 text-left text-xs md:text-sm whitespace-nowrap">Visit Date</th>
+                        <th className="px-3 md:px-4 py-2 md:py-3 text-left text-xs md:text-sm whitespace-nowrap">Actions</th>
                       </tr>
                     </thead>
                     <tbody className="divide-y">
                       {patients.map((patient) => (
                         <tr key={patient.id} className="hover:bg-gray-50">
-                          <td className="px-4 py-3 text-sm font-medium">{patient.name}</td>
-                          <td className="px-4 py-3 text-sm">{patient.age} • {patient.gender}</td>
-                          <td className="px-4 py-3 text-sm">{patient.contactNumber || 'N/A'}</td>
-                          <td className="px-4 py-3 text-sm">
+                          <td className="px-3 md:px-4 py-2 md:py-3 text-xs md:text-sm font-medium whitespace-nowrap">{patient.name}</td>
+                          <td className="px-3 md:px-4 py-2 md:py-3 text-xs md:text-sm whitespace-nowrap">{patient.age} • {patient.gender}</td>
+                          <td className="px-3 md:px-4 py-2 md:py-3 text-xs md:text-sm whitespace-nowrap">{patient.contactNumber || 'N/A'}</td>
+                          <td className="px-3 md:px-4 py-2 md:py-3 text-xs md:text-sm whitespace-nowrap">
                             <span className="px-2 py-1 rounded-full text-xs bg-purple-100 text-purple-800">
                               {patient.doctor?.fullName || 'N/A'}
                             </span>
                           </td>
-                          <td className="px-4 py-3 text-sm max-w-xs truncate">{patient.symptoms}</td>
-                          <td className="px-4 py-3 text-sm font-semibold text-green-600">
+                          <td className="px-3 md:px-4 py-2 md:py-3 text-xs md:text-sm" style={{ maxWidth: '200px' }}>
+                            <div className="truncate">{patient.symptoms}</div>
+                          </td>
+                          <td className="px-3 md:px-4 py-2 md:py-3 text-xs md:text-sm font-semibold text-green-600 whitespace-nowrap">
                             Rs. {patient.amountCharged || '0.00'}
                           </td>
-                          <td className="px-4 py-3 text-sm">{format(new Date(patient.visitDate), 'MMM dd, yyyy')}</td>
-                          <td className="px-4 py-3">
-                            <button onClick={() => handleViewDetails(patient)} className="text-blue-600 hover:text-blue-800 p-2">
-                              <FaEye className="text-lg" />
+                          <td className="px-3 md:px-4 py-2 md:py-3 text-xs md:text-sm whitespace-nowrap">{format(new Date(patient.visitDate), 'MMM dd, yyyy')}</td>
+                          <td className="px-3 md:px-4 py-2 md:py-3 whitespace-nowrap">
+                            <button onClick={() => handleViewDetails(patient)} className="text-blue-600 hover:text-blue-800 p-1 md:p-2">
+                              <FaEye className="text-base md:text-lg" />
                             </button>
                           </td>
                         </tr>
@@ -271,7 +253,6 @@ export default function AdminPatients() {
                   </table>
                 </div>
 
-                {/* Pagination */}
                 <div className="px-4 py-4 border-t bg-gray-50">
                   <div className="flex flex-col md:flex-row items-center justify-between gap-3">
                     <div className="text-xs md:text-sm text-gray-700">
@@ -279,17 +260,17 @@ export default function AdminPatients() {
                     </div>
                     <div className="flex items-center gap-2">
                       <button onClick={() => handlePageChange(currentPage - 1)} disabled={currentPage === 1}
-                        className="px-3 py-1.5 border rounded-lg hover:bg-gray-100 disabled:opacity-50">
+                        className="px-3 py-1.5 border rounded-lg hover:bg-gray-100 disabled:opacity-50 text-sm">
                         <FaChevronLeft />
                       </button>
                       {getPageNumbers().map((page) => (
                         <button key={page} onClick={() => handlePageChange(page)}
-                          className={`px-3 py-1.5 border rounded-lg ${currentPage === page ? 'bg-blue-600 text-white' : 'hover:bg-gray-100'}`}>
+                          className={`px-3 py-1.5 border rounded-lg text-sm ${currentPage === page ? 'bg-blue-600 text-white' : 'hover:bg-gray-100'}`}>
                           {page}
                         </button>
                       ))}
                       <button onClick={() => handlePageChange(currentPage + 1)} disabled={currentPage === totalPages}
-                        className="px-3 py-1.5 border rounded-lg hover:bg-gray-100 disabled:opacity-50">
+                        className="px-3 py-1.5 border rounded-lg hover:bg-gray-100 disabled:opacity-50 text-sm">
                         <FaChevronRight />
                       </button>
                     </div>
@@ -303,49 +284,43 @@ export default function AdminPatients() {
 
       {/* Details Modal */}
       {showDetailsModal && selectedPatient && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-lg shadow-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
-            <div className="bg-gradient-to-r from-blue-600 to-indigo-600 text-white p-4 flex justify-between items-center">
-              <h2 className="text-xl font-bold">Patient Details</h2>
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4 overflow-y-auto">
+          <div className="bg-white rounded-lg shadow-xl max-w-2xl w-full my-8">
+            <div className="bg-gradient-to-r from-blue-600 to-indigo-600 text-white p-4 flex justify-between items-center rounded-t-lg">
+              <h2 className="text-lg md:text-xl font-bold">Patient Details</h2>
               <button onClick={() => setShowDetailsModal(false)} className="text-white hover:text-gray-200">
                 <FaTimes className="text-xl" />
               </button>
             </div>
-            <div className="p-6">
+            <div className="p-4 md:p-6 max-h-[70vh] overflow-y-auto">
               <div className="grid grid-cols-2 gap-4">
-                <div><label className="block text-sm text-gray-500">Name</label><p className="font-semibold">{selectedPatient.name}</p></div>
-                <div><label className="block text-sm text-gray-500">Age/Gender</label><p>{selectedPatient.age} • {selectedPatient.gender}</p></div>
-                <div><label className="block text-sm text-gray-500">Contact</label><p>{selectedPatient.contactNumber || 'N/A'}</p></div>
-                <div><label className="block text-sm text-gray-500">Doctor</label><p>{selectedPatient.doctor?.fullName || 'N/A'}</p></div>
-                <div><label className="block text-sm text-gray-500">Amount Charged</label><p className="text-lg font-bold text-green-600">Rs. {selectedPatient.amountCharged || '0.00'}</p></div>
-                <div><label className="block text-sm text-gray-500">Visit Date</label><p>{format(new Date(selectedPatient.visitDate), 'MMMM dd, yyyy')}</p></div>
-                <div className="col-span-2"><label className="block text-sm text-gray-500">Address</label><p>{selectedPatient.address || 'N/A'}</p></div>
-                <div className="col-span-2"><label className="block text-sm text-gray-500">Symptoms</label><p>{selectedPatient.symptoms}</p></div>
-                <div className="col-span-2"><label className="block text-sm text-gray-500">Diagnosis</label><p>{selectedPatient.diagnosis || 'N/A'}</p></div>
+                <div><label className="block text-xs md:text-sm text-gray-500">Name</label><p className="font-semibold text-sm md:text-base">{selectedPatient.name}</p></div>
+                <div><label className="block text-xs md:text-sm text-gray-500">Age/Gender</label><p className="text-sm md:text-base">{selectedPatient.age} • {selectedPatient.gender}</p></div>
+                <div><label className="block text-xs md:text-sm text-gray-500">Contact</label><p className="text-sm md:text-base">{selectedPatient.contactNumber || 'N/A'}</p></div>
+                <div><label className="block text-xs md:text-sm text-gray-500">Doctor</label><p className="text-sm md:text-base">{selectedPatient.doctor?.fullName || 'N/A'}</p></div>
+                <div><label className="block text-xs md:text-sm text-gray-500">Amount Charged</label><p className="text-base md:text-lg font-bold text-green-600">Rs. {selectedPatient.amountCharged || '0.00'}</p></div>
+                <div><label className="block text-xs md:text-sm text-gray-500">Visit Date</label><p className="text-sm md:text-base">{format(new Date(selectedPatient.visitDate), 'MMMM dd, yyyy')}</p></div>
+                <div className="col-span-2"><label className="block text-xs md:text-sm text-gray-500">Address</label><p className="text-sm md:text-base">{selectedPatient.address || 'N/A'}</p></div>
+                <div className="col-span-2"><label className="block text-xs md:text-sm text-gray-500">Symptoms</label><p className="text-sm md:text-base">{selectedPatient.symptoms}</p></div>
+                <div className="col-span-2"><label className="block text-xs md:text-sm text-gray-500">Diagnosis</label><p className="text-sm md:text-base">{selectedPatient.diagnosis || 'N/A'}</p></div>
                 {selectedPatient.prescribedMedicines?.length > 0 && (
                   <div className="col-span-2">
-                    <label className="block text-sm text-gray-500 mb-2">Medicines</label>
+                    <label className="block text-xs md:text-sm text-gray-500 mb-2">Medicines</label>
                     <div className="bg-gray-50 p-3 rounded-lg">
                       {selectedPatient.prescribedMedicines.map((med, i) => (
-                        <div key={i} className="text-sm mb-1">• {med.name} - {med.quantity} ({med.dosage})</div>
+                        <div key={i} className="text-xs md:text-sm mb-1">• {med.name} - {med.quantity} ({med.dosage})</div>
                       ))}
                     </div>
                   </div>
                 )}
               </div>
             </div>
-            <div className="bg-gray-50 px-6 py-4 flex justify-end border-t">
-              <button onClick={() => setShowDetailsModal(false)} className="px-6 py-2 bg-blue-600 text-white rounded-lg">Close</button>
+            <div className="bg-gray-50 px-4 md:px-6 py-4 flex justify-end border-t rounded-b-lg">
+              <button onClick={() => setShowDetailsModal(false)} className="px-4 md:px-6 py-2 bg-blue-600 text-white rounded-lg text-sm md:text-base">Close</button>
             </div>
           </div>
         </div>
       )}
-
-      <footer className="bg-white border-t py-4 mt-auto">
-        <div className="max-w-7xl mx-auto px-4 text-center">
-          <p className="text-xs md:text-sm text-gray-600">© 2024 Begum Sahib Noor Zaman Sahulat Dispensary</p>
-        </div>
-      </footer>
     </div>
  </Layout>
     </ProtectedRoute>
