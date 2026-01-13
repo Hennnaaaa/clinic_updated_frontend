@@ -1,90 +1,680 @@
 import { useState, useEffect } from 'react';
+import { useAuth } from '../../context/AuthContext';
+import { useRouter } from 'next/router';
+import axios from 'axios';
+import { toast } from 'react-toastify';
+import { FaSearch, FaFilter, FaTimes, FaChevronLeft, FaChevronRight, FaEdit, FaEye } from 'react-icons/fa';
+import { format } from 'date-fns';
 import Head from 'next/head';
 import Layout from '../../components/layout/Layout';
 import ProtectedRoute from '../../components/common/ProtectedRoute';
-import api from '../../utils/api';
-import { FaSearch } from 'react-icons/fa';
-import { toast } from 'react-toastify';
 
 export default function DoctorPatients() {
+  const { user, loading: authLoading } = useAuth();
+  const router = useRouter();
   const [patients, setPatients] = useState([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
+  const [showFilters, setShowFilters] = useState(false);
+  
+  // Edit Modal State
+  const [showEditModal, setShowEditModal] = useState(false);
+  const [editingPatient, setEditingPatient] = useState(null);
+  const [saving, setSaving] = useState(false);
+  
+  // Pagination
+  const [currentPage, setCurrentPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
+  const [totalPatients, setTotalPatients] = useState(0);
+  const limit = 20;
+  
+  // Filters
+  const [filters, setFilters] = useState({
+    gender: '',
+    minAge: '',
+    maxAge: '',
+    symptoms: '',
+    startDate: '',
+    endDate: ''
+  });
 
   useEffect(() => {
-    fetchPatients();
-  }, []);
+    if (!authLoading && (!user || user.role !== 'doctor')) {
+      router.push('/login');
+    }
+  }, [user, authLoading, router]);
+
+  useEffect(() => {
+    if (user && user.role === 'doctor') {
+      fetchPatients();
+    }
+  }, [user, currentPage, searchTerm, filters]);
 
   const fetchPatients = async () => {
     try {
-      const response = await api.get('/patients');
-      setPatients(response.data.patients);
+      setLoading(true);
+      const token = localStorage.getItem('token');
+      
+      const params = new URLSearchParams({
+        page: currentPage,
+        limit: limit
+      });
+      
+      if (searchTerm) params.append('search', searchTerm);
+      if (filters.gender) params.append('gender', filters.gender);
+      if (filters.minAge) params.append('minAge', filters.minAge);
+      if (filters.maxAge) params.append('maxAge', filters.maxAge);
+      if (filters.symptoms) params.append('symptoms', filters.symptoms);
+      if (filters.startDate) params.append('startDate', filters.startDate);
+      if (filters.endDate) params.append('endDate', filters.endDate);
+
+      const response = await axios.get(
+        `${process.env.NEXT_PUBLIC_API_URL || process.env.API_URL}/patients?${params}`,
+        {
+          headers: { Authorization: `Bearer ${token}` }
+        }
+      );
+
+      setPatients(response.data.patients || []);
+      setTotalPatients(response.data.pagination?.total || 0);
+      setTotalPages(response.data.pagination?.pages || 1);
     } catch (error) {
-      toast.error('Failed to load patients');
+      console.error('Error fetching patients:', error);
+      toast.error('Failed to fetch patients');
     } finally {
       setLoading(false);
     }
   };
 
-  const filteredPatients = patients.filter(p =>
-    p.name.toLowerCase().includes(searchTerm.toLowerCase())
-  );
+  const handleSearch = (value) => {
+    setSearchTerm(value);
+    setCurrentPage(1);
+  };
+
+  const handleFilterChange = (key, value) => {
+    setFilters(prev => ({ ...prev, [key]: value }));
+    setCurrentPage(1);
+  };
+
+  const clearFilters = () => {
+    setFilters({
+      gender: '',
+      minAge: '',
+      maxAge: '',
+      symptoms: '',
+      startDate: '',
+      endDate: ''
+    });
+    setSearchTerm('');
+    setCurrentPage(1);
+  };
+
+  const handlePageChange = (newPage) => {
+    if (newPage >= 1 && newPage <= totalPages) {
+      setCurrentPage(newPage);
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+  };
+
+  const getPageNumbers = () => {
+    const pages = [];
+    const showPages = 5;
+    
+    let startPage = Math.max(1, currentPage - Math.floor(showPages / 2));
+    let endPage = Math.min(totalPages, startPage + showPages - 1);
+    
+    if (endPage - startPage < showPages - 1) {
+      startPage = Math.max(1, endPage - showPages + 1);
+    }
+    
+    for (let i = startPage; i <= endPage; i++) {
+      pages.push(i);
+    }
+    
+    return pages;
+  };
+
+  // Edit Patient Functions
+  const handleEditClick = (patient) => {
+    setEditingPatient({...patient});
+    setShowEditModal(true);
+  };
+
+  const handleSaveEdit = async () => {
+    if (!editingPatient) return;
+    
+    try {
+      setSaving(true);
+      const token = localStorage.getItem('token');
+      
+      await axios.put(
+        `${process.env.NEXT_PUBLIC_API_URL || process.env.API_URL}/patients/${editingPatient.id}`,
+        editingPatient,
+        {
+          headers: { Authorization: `Bearer ${token}` }
+        }
+      );
+      
+      toast.success('Patient updated successfully');
+      setShowEditModal(false);
+      setEditingPatient(null);
+      fetchPatients(); // Refresh the list
+    } catch (error) {
+      console.error('Error updating patient:', error);
+      toast.error('Failed to update patient');
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const handleEditChange = (field, value) => {
+    setEditingPatient(prev => ({
+      ...prev,
+      [field]: value
+    }));
+  };
+
+  if (authLoading || !user) {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <div className="spinner"></div>
+      </div>
+    );
+  }
 
   return (
-    <ProtectedRoute allowedRoles={['doctor']}>
+     <ProtectedRoute allowedRoles={['doctor']}>
       <Head><title>My Patients - Doctor</title></Head>
       <Layout>
-        <div className="space-y-6">
-          <div className="relative max-w-md">
-            <FaSearch className="absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-400" />
-            <input type="text" placeholder="Search patients..." value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} className="input-field pl-12" />
+    <div className="min-h-screen flex flex-col bg-gradient-to-br from-blue-50 to-indigo-100">
+      <div className="flex-1 p-3 md:p-6">
+        <div className="max-w-7xl mx-auto">
+          {/* Header */}
+          <div className="mb-4 md:mb-6">
+            <h1 className="text-2xl md:text-3xl font-bold text-gray-800 mb-2">My Patients</h1>
+            <p className="text-sm md:text-base text-gray-600">
+              Total: {totalPatients} patients • Page {currentPage} of {totalPages}
+            </p>
           </div>
 
-          {loading ? (
-            <div className="flex justify-center py-12"><div className="spinner"></div></div>
-          ) : (
-            <div className="card">
-              <div className="table-wrapper">
-                <table className="table">
-                  <thead>
-                    <tr>
-                      <th>Name</th>
-                      <th>Age/Gender</th>
-                      <th>Symptoms</th>
-                      <th>Prescribed Medicines</th>
-                      <th>Visit Date</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {filteredPatients.map((patient) => (
-                      <tr key={patient.id}>
-                        <td className="font-semibold">{patient.name}</td>
-                        <td>{patient.age} • {patient.gender}</td>
-                        <td className="max-w-xs truncate">{patient.symptoms}</td>
-                        <td>
-                          {patient.prescribedMedicines && patient.prescribedMedicines.length > 0 ? (
-                            <div className="text-sm space-y-1">
-                              {patient.prescribedMedicines.map((med, idx) => (
-                                <div key={idx} className="bg-green-50 px-2 py-1 rounded inline-block mr-1">
-                                  <span className="font-medium text-green-800">{med.name}</span>
-                                  <span className="text-gray-600 text-xs"> ({med.quantity})</span>
-                                </div>
-                              ))}
-                            </div>
-                          ) : (
-                            <span className="text-gray-400 text-sm italic">None</span>
-                          )}
-                        </td>
-                        <td>{new Date(patient.visitDate).toLocaleDateString()}</td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
+          {/* Search and Filter Bar */}
+          <div className="bg-white rounded-lg shadow-md p-3 md:p-4 mb-4">
+            <div className="flex flex-col md:flex-row gap-3">
+              {/* Search */}
+              <div className="flex-1 relative">
+                <FaSearch className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 text-sm md:text-base" />
+                <input
+                  type="text"
+                  placeholder="Search patients..."
+                  value={searchTerm}
+                  onChange={(e) => handleSearch(e.target.value)}
+                  className="w-full pl-10 pr-4 py-2 md:py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm md:text-base"
+                />
               </div>
+              
+              {/* Filter Button */}
+              <button
+                onClick={() => setShowFilters(!showFilters)}
+                className="flex items-center justify-center gap-2 px-4 py-2 md:py-2.5 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition text-sm md:text-base whitespace-nowrap"
+              >
+                <FaFilter className="text-sm md:text-base" />
+                <span>Filters</span>
+                {showFilters && <FaTimes className="text-sm" />}
+              </button>
             </div>
-          )}
+
+            {/* Filter Panel */}
+            {showFilters && (
+              <div className="mt-4 pt-4 border-t border-gray-200">
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                  <div>
+                    <label className="block text-xs md:text-sm font-medium text-gray-700 mb-1">Gender</label>
+                    <select
+                      value={filters.gender}
+                      onChange={(e) => handleFilterChange('gender', e.target.value)}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 text-sm md:text-base"
+                    >
+                      <option value="">All</option>
+                      <option value="Male">Male</option>
+                      <option value="Female">Female</option>
+                      <option value="Other">Other</option>
+                    </select>
+                  </div>
+
+                  <div>
+                    <label className="block text-xs md:text-sm font-medium text-gray-700 mb-1">Min Age</label>
+                    <input
+                      type="number"
+                      value={filters.minAge}
+                      onChange={(e) => handleFilterChange('minAge', e.target.value)}
+                      placeholder="Min age"
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 text-sm md:text-base"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-xs md:text-sm font-medium text-gray-700 mb-1">Max Age</label>
+                    <input
+                      type="number"
+                      value={filters.maxAge}
+                      onChange={(e) => handleFilterChange('maxAge', e.target.value)}
+                      placeholder="Max age"
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 text-sm md:text-base"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-xs md:text-sm font-medium text-gray-700 mb-1">From Date</label>
+                    <input
+                      type="date"
+                      value={filters.startDate}
+                      onChange={(e) => handleFilterChange('startDate', e.target.value)}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 text-sm md:text-base"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-xs md:text-sm font-medium text-gray-700 mb-1">To Date</label>
+                    <input
+                      type="date"
+                      value={filters.endDate}
+                      onChange={(e) => handleFilterChange('endDate', e.target.value)}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 text-sm md:text-base"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-xs md:text-sm font-medium text-gray-700 mb-1">Symptoms</label>
+                    <input
+                      type="text"
+                      value={filters.symptoms}
+                      onChange={(e) => handleFilterChange('symptoms', e.target.value)}
+                      placeholder="Search symptoms"
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 text-sm md:text-base"
+                    />
+                  </div>
+                </div>
+
+                <div className="mt-3 flex justify-end">
+                  <button
+                    onClick={clearFilters}
+                    className="px-4 py-2 text-sm text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200 transition"
+                  >
+                    Clear All Filters
+                  </button>
+                </div>
+              </div>
+            )}
+          </div>
+
+          {/* Patients Table */}
+          <div className="bg-white rounded-lg shadow-md overflow-hidden">
+            {loading ? (
+              <div className="flex items-center justify-center p-8 md:p-12">
+                <div className="spinner"></div>
+              </div>
+            ) : patients.length === 0 ? (
+              <div className="text-center p-8 md:p-12">
+                <p className="text-base md:text-lg text-gray-600">No patients found</p>
+              </div>
+            ) : (
+              <>
+                {/* Mobile View */}
+                <div className="md:hidden">
+                  {patients.map((patient) => (
+                    <div key={patient.id} className="border-b border-gray-200 p-4">
+                      <div className="flex justify-between items-start mb-2">
+                        <div>
+                          <h3 className="font-semibold text-base text-gray-900">{patient.name}</h3>
+                          <p className="text-sm text-gray-600">{patient.age} • {patient.gender}</p>
+                          <p className="text-xs text-gray-500">{patient.contactNumber}</p>
+                        </div>
+                        <button
+                          onClick={() => handleEditClick(patient)}
+                          className="px-3 py-1.5 bg-blue-600 text-white rounded-lg text-sm hover:bg-blue-700"
+                        >
+                          Edit
+                        </button>
+                      </div>
+                      <p className="text-sm text-gray-700 mb-1">
+                        <span className="font-medium">Symptoms:</span> {patient.symptoms}
+                      </p>
+                      <p className="text-sm text-gray-700 mb-1">
+                        <span className="font-medium">Amount:</span> Rs. {patient.amountCharged ? patient.amountCharged : '0.00'}
+                      </p>
+                      <p className="text-xs text-gray-500">
+                        {format(new Date(patient.visitDate), 'MMM dd, yyyy')}
+                      </p>
+                    </div>
+                  ))}
+                </div>
+
+                {/* Desktop View */}
+                <div className="hidden md:block overflow-x-auto">
+                  <table className="w-full">
+                    <thead className="bg-gradient-to-r from-blue-600 to-indigo-600 text-white">
+                      <tr>
+                        <th className="px-4 py-3 text-left text-sm font-semibold">Name</th>
+                        <th className="px-4 py-3 text-left text-sm font-semibold">Age/Gender</th>
+                        <th className="px-4 py-3 text-left text-sm font-semibold">Contact</th>
+                        <th className="px-4 py-3 text-left text-sm font-semibold">Symptoms</th>
+                        <th className="px-4 py-3 text-left text-sm font-semibold">Amount</th>
+                        <th className="px-4 py-3 text-left text-sm font-semibold">Visit Date</th>
+                        <th className="px-4 py-3 text-left text-sm font-semibold">Actions</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-gray-200">
+                      {patients.map((patient) => (
+                        <tr key={patient.id} className="hover:bg-gray-50">
+                          <td className="px-4 py-3 text-sm font-medium">{patient.name}</td>
+                          <td className="px-4 py-3 text-sm">{patient.age} • {patient.gender}</td>
+                          <td className="px-4 py-3 text-sm">{patient.contactNumber}</td>
+                          <td className="px-4 py-3 text-sm max-w-xs truncate">{patient.symptoms}</td>
+                          <td className="px-4 py-3 text-sm font-semibold text-green-600">
+                            Rs. {patient.amountCharged ? patient.amountCharged: '0.00'}
+                          </td>
+                          <td className="px-4 py-3 text-sm">
+                            {format(new Date(patient.visitDate), 'MMM dd, yyyy')}
+                          </td>
+                          <td className="px-4 py-3">
+                            <button
+                              onClick={() => handleEditClick(patient)}
+                              className="text-blue-600 hover:text-blue-800 p-2"
+                              title="Edit Patient"
+                            >
+                              <FaEdit className="text-lg" />
+                            </button>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+
+                {/* Pagination */}
+                <div className="px-4 py-4 border-t border-gray-200 bg-gray-50">
+                  <div className="flex flex-col md:flex-row items-center justify-between gap-3">
+                    <div className="text-xs md:text-sm text-gray-700">
+                      Showing {((currentPage - 1) * limit) + 1} to {Math.min(currentPage * limit, totalPatients)} of {totalPatients} patients
+                    </div>
+
+                    <div className="flex items-center gap-2">
+                      <button
+                        onClick={() => handlePageChange(currentPage - 1)}
+                        disabled={currentPage === 1}
+                        className="px-3 py-1.5 text-sm border border-gray-300 rounded-lg hover:bg-gray-100 disabled:opacity-50 disabled:cursor-not-allowed"
+                      >
+                        <FaChevronLeft className="text-xs" />
+                      </button>
+
+                      <div className="flex gap-1">
+                        {currentPage > 3 && (
+                          <>
+                            <button
+                              onClick={() => handlePageChange(1)}
+                              className="px-3 py-1.5 text-sm border border-gray-300 rounded-lg hover:bg-gray-100"
+                            >
+                              1
+                            </button>
+                            {currentPage > 4 && <span className="px-2 py-1.5 text-sm">...</span>}
+                          </>
+                        )}
+
+                        {getPageNumbers().map((page) => (
+                          <button
+                            key={page}
+                            onClick={() => handlePageChange(page)}
+                            className={`px-3 py-1.5 text-sm border rounded-lg ${
+                              currentPage === page
+                                ? 'bg-blue-600 text-white border-blue-600'
+                                : 'border-gray-300 hover:bg-gray-100'
+                            }`}
+                          >
+                            {page}
+                          </button>
+                        ))}
+
+                        {currentPage < totalPages - 2 && (
+                          <>
+                            {currentPage < totalPages - 3 && <span className="px-2 py-1.5 text-sm">...</span>}
+                            <button
+                              onClick={() => handlePageChange(totalPages)}
+                              className="px-3 py-1.5 text-sm border border-gray-300 rounded-lg hover:bg-gray-100"
+                            >
+                              {totalPages}
+                            </button>
+                          </>
+                        )}
+                      </div>
+
+                      <button
+                        onClick={() => handlePageChange(currentPage + 1)}
+                        disabled={currentPage === totalPages}
+                        className="px-3 py-1.5 text-sm border border-gray-300 rounded-lg hover:bg-gray-100 disabled:opacity-50 disabled:cursor-not-allowed"
+                      >
+                        <FaChevronRight className="text-xs" />
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              </>
+            )}
+          </div>
         </div>
-      </Layout>
+      </div>
+
+      {/* Edit Patient Modal */}
+      {showEditModal && editingPatient && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-lg shadow-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+            {/* Modal Header */}
+            <div className="sticky top-0 bg-gradient-to-r from-blue-600 to-indigo-600 text-white p-4 flex justify-between items-center">
+              <h2 className="text-xl font-bold">Edit Patient Record</h2>
+              <button
+                onClick={() => setShowEditModal(false)}
+                className="text-white hover:text-gray-200"
+              >
+                <FaTimes className="text-xl" />
+              </button>
+            </div>
+
+            {/* Modal Body */}
+            <div className="p-6">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {/* Name */}
+                <div className="md:col-span-2">
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Patient Name *
+                  </label>
+                  <input
+                    type="text"
+                    value={editingPatient.name}
+                    onChange={(e) => handleEditChange('name', e.target.value)}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                    required
+                  />
+                </div>
+
+                {/* Age */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Age *
+                  </label>
+                  <input
+                    type="number"
+                    value={editingPatient.age}
+                    onChange={(e) => handleEditChange('age', e.target.value)}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                    required
+                  />
+                </div>
+
+                {/* Gender */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Gender *
+                  </label>
+                  <select
+                    value={editingPatient.gender}
+                    onChange={(e) => handleEditChange('gender', e.target.value)}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                    required
+                  >
+                    <option value="Male">Male</option>
+                    <option value="Female">Female</option>
+                    <option value="Other">Other</option>
+                  </select>
+                </div>
+
+                {/* Contact */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Contact Number
+                  </label>
+                  <input
+                    type="text"
+                    value={editingPatient.contactNumber || ''}
+                    onChange={(e) => handleEditChange('contactNumber', e.target.value)}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                  />
+                </div>
+
+                {/* Amount Charged */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Amount Charged (Rs.)
+                  </label>
+                  <input
+                    type="number"
+                    step="0.01"
+                    value={editingPatient.amountCharged || 0}
+                    onChange={(e) => handleEditChange('amountCharged', parseFloat(e.target.value) || 0)}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                  />
+                </div>
+
+                {/* Address */}
+                <div className="md:col-span-2">
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Address
+                  </label>
+                  <input
+                    type="text"
+                    value={editingPatient.address || ''}
+                    onChange={(e) => handleEditChange('address', e.target.value)}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                  />
+                </div>
+
+                {/* Symptoms */}
+                <div className="md:col-span-2">
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Symptoms
+                  </label>
+                  <textarea
+                    value={editingPatient.symptoms}
+                    onChange={(e) => handleEditChange('symptoms', e.target.value)}
+                    rows={2}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                  />
+                </div>
+
+                {/* Diagnosis */}
+                <div className="md:col-span-2">
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Diagnosis
+                  </label>
+                  <textarea
+                    value={editingPatient.diagnosis || ''}
+                    onChange={(e) => handleEditChange('diagnosis', e.target.value)}
+                    rows={2}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                  />
+                </div>
+
+                {/* Doctor Notes */}
+                <div className="md:col-span-2">
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Doctor Notes
+                  </label>
+                  <textarea
+                    value={editingPatient.doctorNotes || ''}
+                    onChange={(e) => handleEditChange('doctorNotes', e.target.value)}
+                    rows={2}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                  />
+                </div>
+
+                {/* Follow-up Date */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Follow-up Date
+                  </label>
+                  <input
+                    type="date"
+                    value={editingPatient.followUpDate ? editingPatient.followUpDate.split('T')[0] : ''}
+                    onChange={(e) => handleEditChange('followUpDate', e.target.value)}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                  />
+                </div>
+              </div>
+
+              {/* Medicines Section (Read-only for now) */}
+              {editingPatient.prescribedMedicines && editingPatient.prescribedMedicines.length > 0 && (
+                <div className="mt-4">
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Prescribed Medicines
+                  </label>
+                  <div className="bg-gray-50 p-3 rounded-lg">
+                    {editingPatient.prescribedMedicines.map((med, index) => (
+                      <div key={index} className="text-sm mb-1">
+                        • {med.name} - {med.quantity} {med.unit || ''} ({med.dosage})
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
+
+            {/* Modal Footer */}
+            <div className="sticky bottom-0 bg-gray-50 px-6 py-4 flex gap-3 justify-end border-t">
+              <button
+                onClick={() => setShowEditModal(false)}
+                className="px-6 py-2 border border-gray-300 rounded-lg hover:bg-gray-100 transition"
+                disabled={saving}
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleSaveEdit}
+                className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition disabled:opacity-50"
+                disabled={saving}
+              >
+                {saving ? 'Saving...' : 'Save Changes'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Footer */}
+      <footer className="bg-white border-t border-gray-200 py-4 mt-auto">
+        <div className="max-w-7xl mx-auto px-4 text-center">
+          <p className="text-xs md:text-sm text-gray-600">
+            © 2024 Begum Sahib Noor Zaman Sahulat Dispensary. All rights reserved.
+          </p>
+        </div>
+      </footer>
+    </div>
+       </Layout>
     </ProtectedRoute>
   );
 }
+
+
+
+
+
+
+
+
