@@ -1,4 +1,3 @@
-// Same structure as doctor-patients but for admin - only key differences shown
 import { useState, useEffect } from 'react';
 import { useAuth } from '../../context/AuthContext';
 import { useRouter } from 'next/router';
@@ -202,7 +201,6 @@ export default function AdminPatients() {
             )}
           </div>
 
-          {/* Table Container - Contained Scroll */}
           <div className="bg-white rounded-lg shadow-md overflow-hidden">
             {loading ? (
               <div className="flex items-center justify-center p-12"><div className="spinner"></div></div>
@@ -239,11 +237,11 @@ export default function AdminPatients() {
                             <div className="truncate">{patient.symptoms}</div>
                           </td>
                           <td className="px-3 md:px-4 py-3 md:py-4 text-sm md:text-base font-semibold text-green-600 whitespace-nowrap">
-                             {patient.amountCharged || '0.00'}
+                            Rs. {patient.amountCharged || '0.00'}
                           </td>
                           <td className="px-3 md:px-4 py-3 md:py-4 text-sm md:text-base whitespace-nowrap">{format(new Date(patient.visitDate), 'MMM dd, yyyy')}</td>
                           <td className="px-3 md:px-4 py-3 md:py-4 whitespace-nowrap">
-                            <button onClick={() => handleViewDetails(patient)} className="text-blue-600 hover:text-blue-800 p-2">
+                            <button onClick={() => handleViewDetails(patient)} className="text-blue-600 hover:text-blue-800 p-2" title="View Details">
                               <FaEye className="text-xl md:text-2xl" />
                             </button>
                           </td>
@@ -260,18 +258,40 @@ export default function AdminPatients() {
                     </div>
                     <div className="flex items-center gap-2">
                       <button onClick={() => handlePageChange(currentPage - 1)} disabled={currentPage === 1}
-                        className="px-3 py-1.5 border rounded-lg hover:bg-gray-100 disabled:opacity-50 text-sm">
-                        <FaChevronLeft />
+                        className="px-4 py-2 text-sm md:text-base border border-gray-300 rounded-lg hover:bg-gray-100 disabled:opacity-50 disabled:cursor-not-allowed">
+                        <FaChevronLeft className="text-xs" />
                       </button>
-                      {getPageNumbers().map((page) => (
-                        <button key={page} onClick={() => handlePageChange(page)}
-                          className={`px-3 py-1.5 border rounded-lg text-sm ${currentPage === page ? 'bg-blue-600 text-white' : 'hover:bg-gray-100'}`}>
-                          {page}
-                        </button>
-                      ))}
+                      <div className="flex gap-1">
+                        {currentPage > 3 && (
+                          <>
+                            <button onClick={() => handlePageChange(1)}
+                              className="px-4 py-2 text-sm md:text-base border border-gray-300 rounded-lg hover:bg-gray-100">
+                              1
+                            </button>
+                            {currentPage > 4 && <span className="px-2 py-1.5 text-sm">...</span>}
+                          </>
+                        )}
+                        {getPageNumbers().map((page) => (
+                          <button key={page} onClick={() => handlePageChange(page)}
+                            className={`px-4 py-2 text-sm md:text-base border rounded-lg ${
+                              currentPage === page ? 'bg-blue-600 text-white border-blue-600' : 'border-gray-300 hover:bg-gray-100'
+                            }`}>
+                            {page}
+                          </button>
+                        ))}
+                        {currentPage < totalPages - 2 && (
+                          <>
+                            {currentPage < totalPages - 3 && <span className="px-2 py-1.5 text-sm">...</span>}
+                            <button onClick={() => handlePageChange(totalPages)}
+                              className="px-4 py-2 text-sm md:text-base border border-gray-300 rounded-lg hover:bg-gray-100">
+                              {totalPages}
+                            </button>
+                          </>
+                        )}
+                      </div>
                       <button onClick={() => handlePageChange(currentPage + 1)} disabled={currentPage === totalPages}
-                        className="px-3 py-1.5 border rounded-lg hover:bg-gray-100 disabled:opacity-50 text-sm">
-                        <FaChevronRight />
+                        className="px-4 py-2 text-sm md:text-base border border-gray-300 rounded-lg hover:bg-gray-100 disabled:opacity-50 disabled:cursor-not-allowed">
+                        <FaChevronRight className="text-xs" />
                       </button>
                     </div>
                   </div>
@@ -303,12 +323,22 @@ export default function AdminPatients() {
                 <div className="col-span-2"><label className="block text-xs md:text-sm text-gray-500">Address</label><p className="text-sm md:text-base">{selectedPatient.address || 'N/A'}</p></div>
                 <div className="col-span-2"><label className="block text-xs md:text-sm text-gray-500">Symptoms</label><p className="text-sm md:text-base">{selectedPatient.symptoms}</p></div>
                 <div className="col-span-2"><label className="block text-xs md:text-sm text-gray-500">Diagnosis</label><p className="text-sm md:text-base">{selectedPatient.diagnosis || 'N/A'}</p></div>
+                
+                {/* UPDATED: Better medicine display */}
                 {selectedPatient.prescribedMedicines?.length > 0 && (
                   <div className="col-span-2">
-                    <label className="block text-xs md:text-sm text-gray-500 mb-2">Medicines</label>
-                    <div className="bg-gray-50 p-3 rounded-lg">
+                    <label className="block text-xs md:text-sm text-gray-500 mb-2">Prescribed Medicines</label>
+                    <div className="bg-gray-50 p-3 rounded-lg space-y-2">
                       {selectedPatient.prescribedMedicines.map((med, i) => (
-                        <div key={i} className="text-xs md:text-sm mb-1">• {med.name} - {med.quantity} ({med.dosage})</div>
+                        <div key={i} className="flex items-start gap-2 text-sm">
+                          <span className="font-bold text-gray-700">{i + 1}.</span>
+                          <div className="flex-1">
+                            <p className="font-semibold text-gray-800">{med.name}</p>
+                            <p className="text-gray-600">
+                              {med.dosage || `${med.quantity} ${med.unit || ''}`}
+                            </p>
+                          </div>
+                        </div>
                       ))}
                     </div>
                   </div>
@@ -316,7 +346,7 @@ export default function AdminPatients() {
               </div>
             </div>
             <div className="bg-gray-50 px-4 md:px-6 py-4 flex justify-end border-t rounded-b-lg">
-              <button onClick={() => setShowDetailsModal(false)} className="px-4 md:px-6 py-2 bg-blue-600 text-white rounded-lg text-sm md:text-base">Close</button>
+              <button onClick={() => setShowDetailsModal(false)} className="px-4 md:px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition text-sm md:text-base">Close</button>
             </div>
           </div>
         </div>

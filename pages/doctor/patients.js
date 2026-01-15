@@ -3,7 +3,7 @@ import { useAuth } from '../../context/AuthContext';
 import { useRouter } from 'next/router';
 import axios from 'axios';
 import { toast } from 'react-toastify';
-import { FaSearch, FaFilter, FaTimes, FaChevronLeft, FaChevronRight, FaEdit, FaEye } from 'react-icons/fa';
+import { FaSearch, FaFilter, FaTimes, FaChevronLeft, FaChevronRight, FaEdit } from 'react-icons/fa';
 import { format } from 'date-fns';
 import Head from 'next/head';
 import Layout from '../../components/layout/Layout';
@@ -298,7 +298,7 @@ export default function DoctorPatients() {
             )}
           </div>
 
-          {/* Table Container - Scroll ONLY the table, not the page */}
+          {/* Table Container */}
           <div className="bg-white rounded-lg shadow-md overflow-hidden">
             {loading ? (
               <div className="flex items-center justify-center p-8 md:p-12">
@@ -310,7 +310,6 @@ export default function DoctorPatients() {
               </div>
             ) : (
               <>
-                {/* Contained Horizontal Scroll - Table ONLY */}
                 <div className="overflow-x-auto overflow-y-visible">
                   <table className="w-full" style={{ minWidth: '800px' }}>
                     <thead className="bg-gradient-to-r from-blue-600 to-indigo-600 text-white">
@@ -334,7 +333,7 @@ export default function DoctorPatients() {
                             <div className="truncate">{patient.symptoms}</div>
                           </td>
                           <td className="px-3 md:px-4 py-3 md:py-4 text-sm md:text-base font-semibold text-green-600 whitespace-nowrap">
-                            {patient.amountCharged ? patient.amountCharged : '0.00'}
+                            Rs. {patient.amountCharged || '0.00'}
                           </td>
                           <td className="px-3 md:px-4 py-3 md:py-4 text-sm md:text-base whitespace-nowrap">
                             {format(new Date(patient.visitDate), 'MMM dd, yyyy')}
@@ -426,7 +425,7 @@ export default function DoctorPatients() {
         </div>
       </div>
 
-      {/* Edit Modal - Same as before */}
+      {/* Edit Modal */}
       {showEditModal && editingPatient && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4 overflow-y-auto">
           <div className="bg-white rounded-lg shadow-xl max-w-2xl w-full my-8">
@@ -547,13 +546,20 @@ export default function DoctorPatients() {
                 </div>
               </div>
 
+              {/* UPDATED: Better medicine display */}
               {editingPatient.prescribedMedicines && editingPatient.prescribedMedicines.length > 0 && (
                 <div className="mt-4">
                   <label className="block text-sm font-medium text-gray-700 mb-2">Prescribed Medicines</label>
-                  <div className="bg-gray-50 p-3 rounded-lg">
+                  <div className="bg-gray-50 p-3 rounded-lg space-y-2">
                     {editingPatient.prescribedMedicines.map((med, index) => (
-                      <div key={index} className="text-sm mb-1">
-                        • {med.name} - {med.quantity} {med.unit || ''} ({med.dosage})
+                      <div key={index} className="flex items-start gap-2 text-sm">
+                        <span className="font-bold text-gray-700">{index + 1}.</span>
+                        <div className="flex-1">
+                          <p className="font-semibold text-gray-800">{med.name}</p>
+                          <p className="text-gray-600">
+                            {med.dosage || `${med.quantity} ${med.unit || ''}`}
+                          </p>
+                        </div>
                       </div>
                     ))}
                   </div>

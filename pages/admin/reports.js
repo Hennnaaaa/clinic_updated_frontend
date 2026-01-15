@@ -40,7 +40,7 @@ export default function AdminReports() {
 
   useEffect(() => {
     applyFilters();
-    setCurrentPage(1); // Reset to first page when filters change
+    setCurrentPage(1);
   }, [patients, filters]);
 
   const fetchAllData = async () => {
@@ -243,7 +243,7 @@ export default function AdminReports() {
         p.symptoms || 'N/A',
         p.diagnosis || 'N/A',
         p.amountCharged || '0.00',
-        p.prescribedMedicines ? p.prescribedMedicines.map(m => m.name).join('; ') : 'N/A',
+        p.prescribedMedicines ? p.prescribedMedicines.map(m => `${m.name} (${m.dosage || m.quantity + ' ' + (m.unit || '')})`).join('; ') : 'N/A',
         p.doctor?.fullName || 'N/A',
         new Date(p.visitDate).toLocaleDateString()
       ])
@@ -421,7 +421,7 @@ export default function AdminReports() {
             </div>
           </div>
 
-          {/* Statistics Summary - Mobile Optimized */}
+          {/* Statistics Summary */}
           <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-3 md:gap-4">
             <div className="stat-card bg-gradient-to-br from-primary-50 to-blue-50">
               <p className="text-2xl md:text-3xl font-bold text-primary-600">{stats.total}</p>
@@ -451,7 +451,7 @@ export default function AdminReports() {
             </div>
           </div>
 
-          {/* Age Distribution - Mobile Optimized */}
+          {/* Age Distribution */}
           <div className="card">
             <div className="card-header">
               <h3 className="text-base md:text-lg font-bold">Age Distribution</h3>
@@ -468,7 +468,7 @@ export default function AdminReports() {
             </div>
           </div>
 
-          {/* Top Medicines & Symptoms - Mobile Optimized */}
+          {/* Top Medicines & Symptoms */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-6">
             <div className="card">
               <div className="card-header">
@@ -511,7 +511,7 @@ export default function AdminReports() {
             </div>
           </div>
 
-          {/* Filtered Results Table - Mobile Optimized with Pagination */}
+          {/* Filtered Results Table with Pagination */}
           <div className="card">
             <div className="card-header">
               <h3 className="text-base md:text-xl font-bold">
@@ -522,7 +522,6 @@ export default function AdminReports() {
             <div className="card-body">
               {currentPatients.length > 0 ? (
                 <>
-                  {/* Contained Horizontal Scroll - Table ONLY, Not Page */}
                   <div className="overflow-x-auto overflow-y-visible">
                     <table className="w-full" style={{ minWidth: '1000px' }}>
                       <thead className="bg-gradient-to-r from-blue-600 to-indigo-600 text-white">
@@ -553,7 +552,7 @@ export default function AdminReports() {
                                 <div className="flex flex-wrap gap-1">
                                   {patient.prescribedMedicines.map((med, idx) => (
                                     <span key={idx} className="inline-block bg-green-100 text-green-800 px-2 py-1 rounded text-xs md:text-sm whitespace-nowrap">
-                                      {med.name} ({med.quantity})
+                                      {med.name} ({med.dosage || `${med.quantity} ${med.unit || ''}`})
                                     </span>
                                   ))}
                                 </div>
@@ -567,6 +566,7 @@ export default function AdminReports() {
                               <button 
                                 onClick={() => viewPatientDetails(patient)}
                                 className="text-primary-600 hover:text-primary-800 p-2"
+                                title="View Details"
                               >
                                 <FaEye className="text-xl md:text-2xl" />
                               </button>
@@ -656,7 +656,7 @@ export default function AdminReports() {
           </div>
         </div>
 
-        {/* Patient Details Modal - Mobile Optimized */}
+        {/* Patient Details Modal - UPDATED */}
         {showDetailsModal && selectedPatient && (
           <div className="modal-overlay" onClick={() => setShowDetailsModal(false)}>
             <div className="modal-content max-w-3xl" onClick={(e) => e.stopPropagation()}>
@@ -686,7 +686,7 @@ export default function AdminReports() {
                   </div>
                   <div className="col-span-2">
                     <p className="text-xs md:text-sm text-gray-600">Amount Charged</p>
-                    <p className="font-bold text-base md:text-lg text-green-600"> {selectedPatient.amountCharged || '0.00'}</p>
+                    <p className="font-bold text-base md:text-lg text-green-600">Rs. {selectedPatient.amountCharged || '0.00'}</p>
                   </div>
                 </div>
 
@@ -705,16 +705,22 @@ export default function AdminReports() {
                   <p className="font-semibold text-sm md:text-base">{selectedPatient.diagnosis || 'N/A'}</p>
                 </div>
 
+                {/* UPDATED: Better medicine display */}
                 <div>
                   <p className="text-xs md:text-sm text-gray-600 mb-2">Prescribed Medicines</p>
                   {selectedPatient.prescribedMedicines && selectedPatient.prescribedMedicines.length > 0 ? (
                     <div className="space-y-2">
                       {selectedPatient.prescribedMedicines.map((med, idx) => (
                         <div key={idx} className="bg-green-50 p-3 md:p-4 rounded-lg border-2 border-green-200">
-                          <p className="font-bold text-sm md:text-lg text-green-900">{idx + 1}. {med.name}</p>
-                          <p className="text-xs md:text-base text-gray-700 mt-1">
-                            <span className="font-semibold">Quantity:</span> {med.quantity} {med.unit}
-                          </p>
+                          <div className="flex items-start gap-2">
+                            <span className="font-bold text-sm md:text-base text-gray-700">{idx + 1}.</span>
+                            <div className="flex-1">
+                              <p className="font-bold text-sm md:text-lg text-green-900">{med.name}</p>
+                              <p className="text-xs md:text-base text-gray-700 mt-1">
+                                {med.dosage || `${med.quantity} ${med.unit || ''}`}
+                              </p>
+                            </div>
+                          </div>
                         </div>
                       ))}
                     </div>
