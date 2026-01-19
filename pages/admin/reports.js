@@ -4,7 +4,7 @@ import Layout from '../../components/layout/Layout';
 import ProtectedRoute from '../../components/common/ProtectedRoute';
 import api from '../../utils/api';
 import { toast } from 'react-toastify';
-import { FaFilter, FaFileDownload, FaEye, FaTimes, FaChevronLeft, FaChevronRight } from 'react-icons/fa';
+import { FaFilter, FaFileDownload, FaEye, FaTimes, FaChevronLeft, FaChevronRight, FaMoneyBillWave, FaCalendarDay } from 'react-icons/fa';
 
 export default function AdminReports() {
   const [patients, setPatients] = useState([]);
@@ -13,6 +13,15 @@ export default function AdminReports() {
   const [medicines, setMedicines] = useState([]);
   const [selectedPatient, setSelectedPatient] = useState(null);
   const [showDetailsModal, setShowDetailsModal] = useState(false);
+  
+  // NEW: Backend-calculated revenue data
+  const [dailyRevenueData, setDailyRevenueData] = useState([]);
+  const [overallRevenueStats, setOverallRevenueStats] = useState({
+    totalPatients: 0,
+    totalRevenue: 0,
+    averageRevenue: 0
+  });
+  const [revenueLoading, setRevenueLoading] = useState(false);
   
   // Pagination
   const [currentPage, setCurrentPage] = useState(1);
@@ -41,24 +50,57 @@ export default function AdminReports() {
   useEffect(() => {
     applyFilters();
     setCurrentPage(1);
-  }, [patients, filters]);
+    // Fetch revenue data when date filters change
+    fetchDailyRevenue();
+  }, [patients, filters.startDate, filters.endDate]);
 
   const fetchAllData = async () => {
     try {
       setLoading(true);
       const [patientsRes, medicinesRes] = await Promise.all([
-        api.get('/patients?limit=1000'),
+        api.get('/patients?limit=10000'),
         api.get('/medicines')
       ]);
       
       setPatients(patientsRes.data.patients || []);
       setFilteredPatients(patientsRes.data.patients || []);
       setMedicines(medicinesRes.data || []);
+      
+      // Fetch initial revenue data
+      await fetchDailyRevenue();
     } catch (error) {
       console.error('Fetch error:', error);
       toast.error('Failed to load data');
     } finally {
       setLoading(false);
+    }
+  };
+
+  // Fetch daily revenue from backend API
+  const fetchDailyRevenue = async () => {
+    try {
+      setRevenueLoading(true);
+      
+      // Build query params
+      const params = new URLSearchParams();
+      if (filters.startDate) params.append('startDate', filters.startDate);
+      if (filters.endDate) params.append('endDate', filters.endDate);
+      
+      const response = await api.get(`/patients/revenue/daily?${params.toString()}`);
+      
+      setDailyRevenueData(response.data.dailyRevenue || []);
+      setOverallRevenueStats(response.data.overallStats || {
+        totalPatients: 0,
+        totalRevenue: 0,
+        averageRevenue: 0
+      });
+      
+      console.log('Revenue data fetched from backend:', response.data);
+    } catch (error) {
+      console.error('Error fetching revenue:', error);
+      toast.error('Failed to load revenue data');
+    } finally {
+      setRevenueLoading(false);
     }
   };
 
@@ -161,6 +203,7 @@ export default function AdminReports() {
       avgAge: filteredPatients.length > 0 
         ? (filteredPatients.reduce((sum, p) => sum + p.age, 0) / filteredPatients.length).toFixed(1)
         : 0,
+      totalRevenue: overallRevenueStats.totalRevenue, // Use backend data
       ageGroups: {
         '0-18': filteredPatients.filter(p => p.age <= 18).length,
         '19-35': filteredPatients.filter(p => p.age > 18 && p.age <= 35).length,
@@ -261,6 +304,31 @@ export default function AdminReports() {
     toast.success('Report downloaded successfully');
   };
 
+  const downloadDailyRevenueReport = () => {
+    const csvContent = [
+      ['Date', 'Total Amount (Rs.)', 'Number of Patients', 'Average per Patient (Rs.)'],
+      ...dailyRevenueData.map(day => [
+        day.date,
+        day.totalRevenue.toFixed(2),
+        day.patientCount,
+        day.averageRevenue.toFixed(2)
+      ]),
+      ['', '', '', ''],
+      ['TOTAL', overallRevenueStats.totalRevenue.toFixed(2), overallRevenueStats.totalPatients, overallRevenueStats.averageRevenue.toFixed(2)]
+    ].map(row => row.join(',')).join('\n');
+
+    const blob = new Blob([csvContent], { type: 'text/csv' });
+    const url = window.URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `daily-revenue-report-${new Date().toISOString().split('T')[0]}.csv`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    window.URL.revokeObjectURL(url);
+    toast.success('Daily revenue report downloaded successfully');
+  };
+
   if (loading) {
     return (
       <ProtectedRoute allowedRoles={['admin']}>
@@ -271,7 +339,7 @@ export default function AdminReports() {
 
   return (
     <ProtectedRoute allowedRoles={['admin']}>
-      <Head><title>Patient Reports & Filters - Admin</title></Head>
+      <Head><title>Patient Reports & Revenue - Admin</title></Head>
       <Layout>
         <div className="space-y-4 md:space-y-6 pb-4 md:pb-6">
           {/* Filter Section */}
@@ -279,7 +347,7 @@ export default function AdminReports() {
             <div className="card-header flex flex-col md:flex-row md:items-center justify-between gap-3">
               <div className="flex items-center space-x-2">
                 <FaFilter className="text-primary-600 text-base md:text-lg" />
-                <h3 className="text-base md:text-xl font-bold">Filter Patients by All Fields</h3>
+                <h3 className="text-base md:text-xl font-bold">Filter Patients</h3>
               </div>
               <button onClick={clearFilters} className="btn-secondary text-xs md:text-sm">
                 Clear All Filters
@@ -421,11 +489,18 @@ export default function AdminReports() {
             </div>
           </div>
 
-          {/* Statistics Summary */}
+          {/* Statistics Summary with Revenue */}
           <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-3 md:gap-4">
             <div className="stat-card bg-gradient-to-br from-primary-50 to-blue-50">
               <p className="text-2xl md:text-3xl font-bold text-primary-600">{stats.total}</p>
               <p className="text-xs md:text-sm text-gray-600">Total Patients</p>
+            </div>
+            <div className="stat-card bg-gradient-to-br from-green-50 to-emerald-50">
+              <p className="text-xl md:text-2xl font-bold text-green-600">
+                Rs. {stats.totalRevenue.toFixed(2)}
+              </p>
+              <p className="text-xs md:text-sm text-gray-600">Total Revenue</p>
+              {revenueLoading && <p className="text-xs text-gray-400 mt-1">Updating...</p>}
             </div>
             <div className="stat-card bg-gradient-to-br from-blue-50 to-cyan-50">
               <p className="text-2xl md:text-3xl font-bold text-blue-600">{stats.male}</p>
@@ -436,11 +511,7 @@ export default function AdminReports() {
               <p className="text-xs md:text-sm text-gray-600">Female</p>
             </div>
             <div className="stat-card bg-gradient-to-br from-purple-50 to-violet-50">
-              <p className="text-2xl md:text-3xl font-bold text-purple-600">{stats.other}</p>
-              <p className="text-xs md:text-sm text-gray-600">Other</p>
-            </div>
-            <div className="stat-card bg-gradient-to-br from-green-50 to-emerald-50">
-              <p className="text-2xl md:text-3xl font-bold text-green-600">{stats.avgAge}</p>
+              <p className="text-2xl md:text-3xl font-bold text-purple-600">{stats.avgAge}</p>
               <p className="text-xs md:text-sm text-gray-600">Avg Age</p>
             </div>
             <div className="stat-card bg-gradient-to-br from-orange-50 to-amber-50">
@@ -451,293 +522,314 @@ export default function AdminReports() {
             </div>
           </div>
 
+          {/* Daily Revenue Section - Using Backend Data */}
+          <div className="card">
+            <div className="card-header flex flex-col md:flex-row md:items-center justify-between gap-3">
+              <div className="flex items-center space-x-2">
+                <FaMoneyBillWave className="text-green-600 text-base md:text-lg" />
+                <h3 className="text-base md:text-lg font-bold">
+                  Daily Revenue Breakdown
+                  {revenueLoading && <span className="text-sm font-normal text-gray-500 ml-2">(Loading...)</span>}
+                </h3>
+              </div>
+              <button 
+                onClick={downloadDailyRevenueReport}
+                className="btn-primary text-xs md:text-sm flex items-center gap-2"
+                disabled={revenueLoading}
+              >
+                <FaFileDownload />
+                Download Daily Report
+              </button>
+            </div>
+            <div className="card-body">
+              <div className="overflow-x-auto" style={{ maxHeight: '400px', overflowY: 'auto' }}>
+                <table className="w-full" style={{ minWidth: '600px' }}>
+                  <thead className="bg-gradient-to-r from-green-600 to-emerald-600 text-white sticky top-0 z-10">
+                    <tr>
+                      <th className="px-3 md:px-4 py-3 md:py-4 text-left text-sm md:text-base font-semibold">Date</th>
+                      <th className="px-3 md:px-4 py-3 md:py-4 text-left text-sm md:text-base font-semibold">Patients</th>
+                      <th className="px-3 md:px-4 py-3 md:py-4 text-left text-sm md:text-base font-semibold">Total Amount</th>
+                      <th className="px-3 md:px-4 py-3 md:py-4 text-left text-sm md:text-base font-semibold">Avg/Patient</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-gray-200 bg-white">
+                    {dailyRevenueData.map((day, index) => (
+                      <tr key={index} className="hover:bg-green-50">
+                        <td className="px-3 md:px-4 py-3 md:py-4">
+                          <div className="flex items-center gap-2">
+                            <FaCalendarDay className="text-green-600 text-sm" />
+                            <span className="font-semibold text-gray-800 text-sm md:text-base">{day.date}</span>
+                          </div>
+                        </td>
+                        <td className="px-3 md:px-4 py-3 md:py-4 text-sm md:text-base">
+                          <span className="badge badge-primary">{day.patientCount} patients</span>
+                        </td>
+                        <td className="px-3 md:px-4 py-3 md:py-4">
+                          <span className="text-lg md:text-xl font-bold text-green-600">
+                            Rs. {day.totalRevenue.toFixed(2)}
+                          </span>
+                        </td>
+                        <td className="px-3 md:px-4 py-3 md:py-4">
+                          <span className="text-sm md:text-base font-semibold text-gray-700">
+                            Rs. {day.averageRevenue.toFixed(2)}
+                          </span>
+                        </td>
+                      </tr>
+                    ))}
+                    {dailyRevenueData.length > 0 && (
+                      <tr className="bg-green-100 font-bold sticky bottom-0">
+                        <td className="px-3 md:px-4 py-3 md:py-4 text-sm md:text-base">TOTAL</td>
+                        <td className="px-3 md:px-4 py-3 md:py-4 text-sm md:text-base">{overallRevenueStats.totalPatients} patients</td>
+                        <td className="px-3 md:px-4 py-3 md:py-4">
+                          <span className="text-lg md:text-xl text-green-700">
+                            Rs. {overallRevenueStats.totalRevenue.toFixed(2)}
+                          </span>
+                        </td>
+                        <td className="px-3 md:px-4 py-3 md:py-4 text-sm md:text-base">
+                          Rs. {overallRevenueStats.averageRevenue.toFixed(2)}
+                        </td>
+                      </tr>
+                    )}
+                  </tbody>
+                </table>
+              </div>
+              {dailyRevenueData.length === 0 && !revenueLoading && (
+                <div className="text-center py-8">
+                  <p className="text-gray-500 text-sm md:text-base">No revenue data available for the selected date range</p>
+                </div>
+              )}
+            </div>
+          </div>
+
           {/* Age Distribution */}
           <div className="card">
             <div className="card-header">
-              <h3 className="text-base md:text-lg font-bold">Age Distribution</h3>
+              <h3 className="text-base md:text-xl font-bold">Age Distribution</h3>
             </div>
             <div className="card-body">
-              <div className="grid grid-cols-5 gap-2 md:gap-4">
-                {Object.entries(stats.ageGroups).map(([group, count]) => (
-                  <div key={group} className="text-center p-2 md:p-4 bg-gradient-to-br from-gray-50 to-gray-100 rounded-xl">
-                    <p className="text-xl md:text-2xl font-bold text-gray-700">{count}</p>
-                    <p className="text-xs md:text-sm text-gray-600">Age {group}</p>
+              <div className="grid grid-cols-2 md:grid-cols-5 gap-3 md:gap-4">
+                {Object.entries(stats.ageGroups).map(([range, count]) => (
+                  <div key={range} className="stat-card bg-gradient-to-br from-indigo-50 to-purple-50">
+                    <p className="text-2xl md:text-3xl font-bold text-indigo-600">{count}</p>
+                    <p className="text-xs md:text-sm text-gray-600">{range} years</p>
                   </div>
                 ))}
               </div>
             </div>
           </div>
 
-          {/* Top Medicines & Symptoms */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-6">
-            <div className="card">
-              <div className="card-header">
-                <h3 className="text-base md:text-lg font-bold">Top Prescribed Medicines ({stats.topMedicines.length})</h3>
-              </div>
-              <div className="card-body max-h-80 overflow-y-auto">
-                {stats.topMedicines.length > 0 ? (
-                  <div className="space-y-2">
-                    {stats.topMedicines.map(([name, count], idx) => (
-                      <div key={idx} className="flex items-center justify-between p-2 md:p-3 bg-gradient-to-r from-green-50 to-emerald-50 rounded-lg">
-                        <span className="font-medium text-gray-700 text-sm md:text-base">{name}</span>
-                        <span className="badge badge-success text-xs md:text-sm">{count} times</span>
-                      </div>
-                    ))}
-                  </div>
-                ) : (
-                  <p className="text-center text-gray-500 py-8 text-sm md:text-base">No medicine data</p>
-                )}
-              </div>
+          {/* Top Medicines */}
+          <div className="card">
+            <div className="card-header">
+              <h3 className="text-base md:text-xl font-bold">Top 10 Prescribed Medicines</h3>
             </div>
-
-            <div className="card">
-              <div className="card-header">
-                <h3 className="text-base md:text-lg font-bold">Common Symptoms ({stats.commonSymptoms.length})</h3>
-              </div>
-              <div className="card-body max-h-80 overflow-y-auto">
-                {stats.commonSymptoms.length > 0 ? (
-                  <div className="space-y-2">
-                    {stats.commonSymptoms.map(([symptom, count], idx) => (
-                      <div key={idx} className="flex items-center justify-between p-2 md:p-3 bg-gradient-to-r from-orange-50 to-yellow-50 rounded-lg">
-                        <span className="font-medium text-gray-700 capitalize text-sm md:text-base">{symptom}</span>
-                        <span className="badge badge-warning text-xs md:text-sm">{count} times</span>
+            <div className="card-body">
+              {stats.topMedicines.length > 0 ? (
+                <div className="space-y-2">
+                  {stats.topMedicines.map(([medicine, count], index) => (
+                    <div key={medicine} className="flex items-center justify-between p-2 md:p-3 bg-gradient-to-r from-green-50 to-emerald-50 rounded-lg">
+                      <div className="flex items-center space-x-2 md:space-x-3">
+                        <span className="badge badge-primary text-xs md:text-sm">{index + 1}</span>
+                        <span className="font-semibold text-gray-800 text-sm md:text-base">{medicine}</span>
                       </div>
-                    ))}
-                  </div>
-                ) : (
-                  <p className="text-center text-gray-500 py-8 text-sm md:text-base">No symptom data</p>
-                )}
-              </div>
+                      <span className="badge badge-success text-xs md:text-sm">{count} prescriptions</span>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <p className="text-center text-gray-500 text-sm md:text-base">No medicine data</p>
+              )}
             </div>
           </div>
 
-          {/* Filtered Results Table with Pagination */}
+          {/* Common Symptoms */}
+          <div className="card">
+            <div className="card-header">
+              <h3 className="text-base md:text-xl font-bold">Top 10 Common Symptoms</h3>
+            </div>
+            <div className="card-body">
+              {stats.commonSymptoms.length > 0 ? (
+                <div className="space-y-2">
+                  {stats.commonSymptoms.map(([symptom, count], index) => (
+                    <div key={symptom} className="flex items-center justify-between p-2 md:p-3 bg-gradient-to-r from-orange-50 to-yellow-50 rounded-lg">
+                      <div className="flex items-center space-x-2 md:space-x-3">
+                        <span className="badge badge-primary text-xs md:text-sm">{index + 1}</span>
+                        <span className="font-semibold text-gray-800 text-sm md:text-base capitalize">{symptom}</span>
+                      </div>
+                      <span className="badge badge-warning text-xs md:text-sm">{count} patients</span>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <p className="text-center text-gray-500 text-sm md:text-base">No symptom data</p>
+              )}
+            </div>
+          </div>
+
+          {/* Patient List Table */}
           <div className="card">
             <div className="card-header">
               <h3 className="text-base md:text-xl font-bold">
-                Filtered Results ({filteredPatients.length} patients) 
-                {totalPages > 0 && <span className="text-sm md:text-base font-normal text-gray-600"> • Page {currentPage} of {totalPages}</span>}
+                Patient List ({filteredPatients.length} patients)
               </h3>
             </div>
             <div className="card-body">
-              {currentPatients.length > 0 ? (
-                <>
-                  <div className="overflow-x-auto overflow-y-visible">
-                    <table className="w-full" style={{ minWidth: '1000px' }}>
-                      <thead className="bg-gradient-to-r from-blue-600 to-indigo-600 text-white">
-                        <tr>
-                          <th className="px-3 md:px-4 py-3 md:py-4 text-left text-sm md:text-base whitespace-nowrap font-semibold">Name</th>
-                          <th className="px-3 md:px-4 py-3 md:py-4 text-left text-sm md:text-base whitespace-nowrap font-semibold">Age/Gender</th>
-                          <th className="px-3 md:px-4 py-3 md:py-4 text-left text-sm md:text-base whitespace-nowrap font-semibold">Contact</th>
-                          <th className="px-3 md:px-4 py-3 md:py-4 text-left text-sm md:text-base whitespace-nowrap font-semibold">Symptoms</th>
-                          <th className="px-3 md:px-4 py-3 md:py-4 text-left text-sm md:text-base whitespace-nowrap font-semibold">Amount</th>
-                          <th className="px-3 md:px-4 py-3 md:py-4 text-left text-sm md:text-base whitespace-nowrap font-semibold">Medicines</th>
-                          <th className="px-3 md:px-4 py-3 md:py-4 text-left text-sm md:text-base whitespace-nowrap font-semibold">Visit Date</th>
-                          <th className="px-3 md:px-4 py-3 md:py-4 text-left text-sm md:text-base whitespace-nowrap font-semibold">Doctor</th>
-                          <th className="px-3 md:px-4 py-3 md:py-4 text-left text-sm md:text-base whitespace-nowrap font-semibold">Actions</th>
-                        </tr>
-                      </thead>
-                      <tbody className="divide-y divide-gray-200">
-                        {currentPatients.map((patient) => (
-                          <tr key={patient.id} className="hover:bg-gray-50">
-                            <td className="px-3 md:px-4 py-3 md:py-4 font-semibold text-sm md:text-base whitespace-nowrap">{patient.name}</td>
-                            <td className="px-3 md:px-4 py-3 md:py-4 text-sm md:text-base whitespace-nowrap">{patient.age} • {patient.gender}</td>
-                            <td className="px-3 md:px-4 py-3 md:py-4 text-sm md:text-base whitespace-nowrap">{patient.contactNumber || 'N/A'}</td>
-                            <td className="px-3 md:px-4 py-3 md:py-4 text-sm md:text-base max-w-[200px] truncate">{patient.symptoms || 'N/A'}</td>
-                            <td className="px-3 md:px-4 py-3 md:py-4 text-sm md:text-base font-semibold text-green-600 whitespace-nowrap">
-                              Rs. {patient.amountCharged || '0.00'}
-                            </td>
-                            <td className="px-3 md:px-4 py-3 md:py-4">
-                              {patient.prescribedMedicines && patient.prescribedMedicines.length > 0 ? (
-                                <div className="flex flex-wrap gap-1">
-                                  {patient.prescribedMedicines.map((med, idx) => (
-                                    <span key={idx} className="inline-block bg-green-100 text-green-800 px-2 py-1 rounded text-xs md:text-sm whitespace-nowrap">
-                                      {med.name} ({med.dosage || `${med.quantity} ${med.unit || ''}`})
-                                    </span>
-                                  ))}
-                                </div>
-                              ) : (
-                                <span className="text-gray-400 text-sm italic">None</span>
-                              )}
-                            </td>
-                            <td className="px-3 md:px-4 py-3 md:py-4 text-sm md:text-base whitespace-nowrap">{new Date(patient.visitDate).toLocaleDateString()}</td>
-                            <td className="px-3 md:px-4 py-3 md:py-4 text-sm md:text-base whitespace-nowrap">{patient.doctor?.fullName || 'N/A'}</td>
-                            <td className="px-3 md:px-4 py-3 md:py-4 whitespace-nowrap">
-                              <button 
-                                onClick={() => viewPatientDetails(patient)}
-                                className="text-primary-600 hover:text-primary-800 p-2"
-                                title="View Details"
-                              >
-                                <FaEye className="text-xl md:text-2xl" />
-                              </button>
-                            </td>
-                          </tr>
-                        ))}
-                      </tbody>
-                    </table>
+              <div className="overflow-x-auto">
+                <table className="w-full" style={{ minWidth: '800px' }}>
+                  <thead className="bg-gradient-to-r from-primary-600 to-blue-600 text-white">
+                    <tr>
+                      <th className="px-2 md:px-4 py-2 md:py-3 text-left text-xs md:text-sm">Name</th>
+                      <th className="px-2 md:px-4 py-2 md:py-3 text-left text-xs md:text-sm">Age</th>
+                      <th className="px-2 md:px-4 py-2 md:py-3 text-left text-xs md:text-sm">Gender</th>
+                      <th className="px-2 md:px-4 py-2 md:py-3 text-left text-xs md:text-sm">Contact</th>
+                      <th className="px-2 md:px-4 py-2 md:py-3 text-left text-xs md:text-sm">Amount</th>
+                      <th className="px-2 md:px-4 py-2 md:py-3 text-left text-xs md:text-sm">Visit Date</th>
+                      <th className="px-2 md:px-4 py-2 md:py-3 text-left text-xs md:text-sm">Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-gray-200">
+                    {currentPatients.map((patient) => (
+                      <tr key={patient.id} className="hover:bg-gray-50">
+                        <td className="px-2 md:px-4 py-2 md:py-3 text-xs md:text-sm font-semibold">{patient.name}</td>
+                        <td className="px-2 md:px-4 py-2 md:py-3 text-xs md:text-sm">{patient.age}</td>
+                        <td className="px-2 md:px-4 py-2 md:py-3 text-xs md:text-sm">{patient.gender}</td>
+                        <td className="px-2 md:px-4 py-2 md:py-3 text-xs md:text-sm">{patient.contactNumber || 'N/A'}</td>
+                        <td className="px-2 md:px-4 py-2 md:py-3 text-xs md:text-sm font-semibold text-green-600">
+                          Rs. {patient.amountCharged || '0.00'}
+                        </td>
+                        <td className="px-2 md:px-4 py-2 md:py-3 text-xs md:text-sm">
+                          {new Date(patient.visitDate).toLocaleDateString()}
+                        </td>
+                        <td className="px-2 md:px-4 py-2 md:py-3">
+                          <button
+                            onClick={() => viewPatientDetails(patient)}
+                            className="text-primary-600 hover:text-primary-800 text-xs md:text-sm"
+                          >
+                            <FaEye className="inline mr-1" /> View
+                          </button>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+
+              {/* Pagination */}
+              {totalPages > 1 && (
+                <div className="flex items-center justify-between mt-4 md:mt-6">
+                  <div className="text-xs md:text-sm text-gray-600">
+                    Showing {indexOfFirstPatient + 1} to {Math.min(indexOfLastPatient, filteredPatients.length)} of {filteredPatients.length} patients
                   </div>
-
-                  {/* Pagination Controls */}
-                  {totalPages > 1 && (
-                    <div className="mt-4 px-4 py-4 border-t border-gray-200 bg-gray-50 rounded-b-lg">
-                      <div className="flex flex-col md:flex-row items-center justify-between gap-3">
-                        <div className="text-sm md:text-base text-gray-700 font-medium">
-                          Showing {indexOfFirstPatient + 1} to {Math.min(indexOfLastPatient, filteredPatients.length)} of {filteredPatients.length} patients
-                        </div>
-
-                        <div className="flex items-center gap-2">
-                          <button
-                            onClick={() => handlePageChange(currentPage - 1)}
-                            disabled={currentPage === 1}
-                            className="px-4 py-2 text-sm md:text-base border border-gray-300 rounded-lg hover:bg-gray-100 disabled:opacity-50 disabled:cursor-not-allowed"
-                          >
-                            <FaChevronLeft className="text-xs" />
-                          </button>
-
-                          <div className="flex gap-1">
-                            {currentPage > 3 && (
-                              <>
-                                <button
-                                  onClick={() => handlePageChange(1)}
-                                  className="px-3 py-1.5 text-xs md:text-sm border border-gray-300 rounded-lg hover:bg-gray-100"
-                                >
-                                  1
-                                </button>
-                                {currentPage > 4 && <span className="px-2 py-1.5 text-xs md:text-sm">...</span>}
-                              </>
-                            )}
-
-                            {getPageNumbers().map((page) => (
-                              <button
-                                key={page}
-                                onClick={() => handlePageChange(page)}
-                                className={`px-3 py-1.5 text-xs md:text-sm border rounded-lg ${
-                                  currentPage === page
-                                    ? 'bg-blue-600 text-white border-blue-600'
-                                    : 'border-gray-300 hover:bg-gray-100'
-                                }`}
-                              >
-                                {page}
-                              </button>
-                            ))}
-
-                            {currentPage < totalPages - 2 && (
-                              <>
-                                {currentPage < totalPages - 3 && <span className="px-2 py-1.5 text-xs md:text-sm">...</span>}
-                                <button
-                                  onClick={() => handlePageChange(totalPages)}
-                                  className="px-3 py-1.5 text-xs md:text-sm border border-gray-300 rounded-lg hover:bg-gray-100"
-                                >
-                                  {totalPages}
-                                </button>
-                              </>
-                            )}
-                          </div>
-
-                          <button
-                            onClick={() => handlePageChange(currentPage + 1)}
-                            disabled={currentPage === totalPages}
-                            className="px-4 py-2 text-sm md:text-base border border-gray-300 rounded-lg hover:bg-gray-100 disabled:opacity-50 disabled:cursor-not-allowed"
-                          >
-                            <FaChevronRight className="text-xs" />
-                          </button>
-                        </div>
-                      </div>
-                    </div>
-                  )}
-                </>
-              ) : (
-                <div className="text-center py-12">
-                  <p className="text-gray-500 text-sm md:text-lg mb-4">No patients match your filters</p>
-                  <button onClick={clearFilters} className="btn-primary text-sm md:text-base">Clear Filters</button>
+                  <div className="flex items-center space-x-1 md:space-x-2">
+                    <button
+                      onClick={() => handlePageChange(currentPage - 1)}
+                      disabled={currentPage === 1}
+                      className="px-2 md:px-3 py-1 md:py-2 border rounded text-xs md:text-sm disabled:opacity-50"
+                    >
+                      <FaChevronLeft />
+                    </button>
+                    {getPageNumbers().map(page => (
+                      <button
+                        key={page}
+                        onClick={() => handlePageChange(page)}
+                        className={`px-2 md:px-3 py-1 md:py-2 border rounded text-xs md:text-sm ${
+                          currentPage === page ? 'bg-primary-600 text-white' : 'bg-white'
+                        }`}
+                      >
+                        {page}
+                      </button>
+                    ))}
+                    <button
+                      onClick={() => handlePageChange(currentPage + 1)}
+                      disabled={currentPage === totalPages}
+                      className="px-2 md:px-3 py-1 md:py-2 border rounded text-xs md:text-sm disabled:opacity-50"
+                    >
+                      <FaChevronRight />
+                    </button>
+                  </div>
                 </div>
               )}
             </div>
           </div>
         </div>
 
-        {/* Patient Details Modal - UPDATED */}
+        {/* Patient Details Modal */}
         {showDetailsModal && selectedPatient && (
-          <div className="modal-overlay" onClick={() => setShowDetailsModal(false)}>
-            <div className="modal-content max-w-3xl" onClick={(e) => e.stopPropagation()}>
-              <div className="card-header flex items-center justify-between">
-                <h3 className="text-base md:text-xl font-bold">Patient Details</h3>
-                <button onClick={() => setShowDetailsModal(false)} className="text-gray-500 hover:text-gray-700">
-                  <FaTimes size={20} className="md:w-6 md:h-6" />
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+            <div className="bg-white rounded-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+              <div className="card-header flex justify-between items-center sticky top-0 bg-white z-10">
+                <h3 className="text-lg md:text-xl font-bold">Patient Details</h3>
+                <button
+                  onClick={() => setShowDetailsModal(false)}
+                  className="text-gray-500 hover:text-gray-700"
+                >
+                  <FaTimes className="text-xl md:text-2xl" />
                 </button>
               </div>
-              <div className="card-body space-y-4">
-                <div className="grid grid-cols-2 gap-4">
+              <div className="p-4 md:p-6 space-y-4">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div>
-                    <p className="text-xs md:text-sm text-gray-600">Patient Name</p>
-                    <p className="font-semibold text-sm md:text-lg">{selectedPatient.name}</p>
+                    <p className="text-xs md:text-sm text-gray-600">Name</p>
+                    <p className="font-semibold text-sm md:text-base">{selectedPatient.name}</p>
                   </div>
                   <div>
-                    <p className="text-xs md:text-sm text-gray-600">Age / Gender</p>
-                    <p className="font-semibold text-sm md:text-base">{selectedPatient.age} years • {selectedPatient.gender}</p>
+                    <p className="text-xs md:text-sm text-gray-600">Age</p>
+                    <p className="font-semibold text-sm md:text-base">{selectedPatient.age} years</p>
                   </div>
                   <div>
-                    <p className="text-xs md:text-sm text-gray-600">Contact Number</p>
+                    <p className="text-xs md:text-sm text-gray-600">Gender</p>
+                    <p className="font-semibold text-sm md:text-base">{selectedPatient.gender}</p>
+                  </div>
+                  <div>
+                    <p className="text-xs md:text-sm text-gray-600">Contact</p>
                     <p className="font-semibold text-sm md:text-base">{selectedPatient.contactNumber || 'N/A'}</p>
                   </div>
                   <div>
-                    <p className="text-xs md:text-sm text-gray-600">Visit Date</p>
-                    <p className="font-semibold text-sm md:text-base">{new Date(selectedPatient.visitDate).toLocaleDateString()}</p>
-                  </div>
-                  <div className="col-span-2">
                     <p className="text-xs md:text-sm text-gray-600">Amount Charged</p>
-                    <p className="font-bold text-base md:text-lg text-green-600">Rs. {selectedPatient.amountCharged || '0.00'}</p>
+                    <p className="font-semibold text-sm md:text-base text-green-600">Rs. {selectedPatient.amountCharged || '0.00'}</p>
                   </div>
+                  <div>
+                    <p className="text-xs md:text-sm text-gray-600">Visit Date</p>
+                    <p className="font-semibold text-sm md:text-base">
+                      {new Date(selectedPatient.visitDate).toLocaleDateString()}
+                    </p>
+                  </div>
+                  {selectedPatient.doctor && (
+                    <div>
+                      <p className="text-xs md:text-sm text-gray-600">Doctor</p>
+                      <p className="font-semibold text-sm md:text-base">Dr. {selectedPatient.doctor.fullName}</p>
+                    </div>
+                  )}
                 </div>
-
-                <div>
-                  <p className="text-xs md:text-sm text-gray-600">Address</p>
-                  <p className="font-semibold text-sm md:text-base">{selectedPatient.address || 'N/A'}</p>
-                </div>
-
                 <div>
                   <p className="text-xs md:text-sm text-gray-600">Symptoms</p>
                   <p className="font-semibold text-sm md:text-base">{selectedPatient.symptoms || 'N/A'}</p>
                 </div>
-
                 <div>
                   <p className="text-xs md:text-sm text-gray-600">Diagnosis</p>
                   <p className="font-semibold text-sm md:text-base">{selectedPatient.diagnosis || 'N/A'}</p>
                 </div>
-
-                {/* UPDATED: Better medicine display */}
-                <div>
-                  <p className="text-xs md:text-sm text-gray-600 mb-2">Prescribed Medicines</p>
-                  {selectedPatient.prescribedMedicines && selectedPatient.prescribedMedicines.length > 0 ? (
+                {selectedPatient.prescribedMedicines && selectedPatient.prescribedMedicines.length > 0 && (
+                  <div>
+                    <p className="text-xs md:text-sm text-gray-600 mb-2">Prescribed Medicines</p>
                     <div className="space-y-2">
-                      {selectedPatient.prescribedMedicines.map((med, idx) => (
-                        <div key={idx} className="bg-green-50 p-3 md:p-4 rounded-lg border-2 border-green-200">
-                          <div className="flex items-start gap-2">
-                            <span className="font-bold text-sm md:text-base text-gray-700">{idx + 1}.</span>
-                            <div className="flex-1">
-                              <p className="font-bold text-sm md:text-lg text-green-900">{med.name}</p>
-                              <p className="text-xs md:text-base text-gray-700 mt-1">
-                                {med.dosage || `${med.quantity} ${med.unit || ''}`}
-                              </p>
-                            </div>
-                          </div>
+                      {selectedPatient.prescribedMedicines.map((med, index) => (
+                        <div key={index} className="bg-green-50 p-2 md:p-3 rounded-lg">
+                          <p className="font-semibold text-sm md:text-base">{med.name}</p>
+                          <p className="text-xs md:text-sm text-gray-600">
+                            {med.dosage || `${med.quantity} ${med.unit || ''}`}
+                          </p>
                         </div>
                       ))}
                     </div>
-                  ) : (
-                    <p className="text-gray-500 text-sm md:text-base">No medicines prescribed</p>
-                  )}
-                </div>
-
-                <div>
-                  <p className="text-xs md:text-sm text-gray-600">Doctor Notes</p>
-                  <p className="font-semibold text-sm md:text-base">{selectedPatient.doctorNotes || 'N/A'}</p>
-                </div>
-
-                <div>
-                  <p className="text-xs md:text-sm text-gray-600">Doctor</p>
-                  <p className="font-semibold text-sm md:text-base">{selectedPatient.doctor?.fullName || 'N/A'}</p>
-                </div>
+                  </div>
+                )}
+                {selectedPatient.doctorNotes && (
+                  <div>
+                    <p className="text-xs md:text-sm text-gray-600">Doctor's Notes</p>
+                    <p className="font-semibold text-sm md:text-base">{selectedPatient.doctorNotes}</p>
+                  </div>
+                )}
               </div>
             </div>
           </div>
