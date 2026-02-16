@@ -4,8 +4,7 @@ import Layout from '../../components/layout/Layout';
 import ProtectedRoute from '../../components/common/ProtectedRoute';
 import api from '../../utils/api';
 import { toast } from 'react-toastify';
-import { FaFilter, FaFileDownload, FaEye, FaTimes, FaChevronLeft, FaChevronRight, FaMoneyBillWave, FaCalendarDay } from 'react-icons/fa';
-
+import { FaFilter, FaFileDownload, FaEye, FaTimes, FaChevronLeft, FaChevronRight, FaMoneyBillWave, FaCalendarDay, FaCalendarAlt, FaChartLine } from 'react-icons/fa';
 export default function AdminReports() {
   const [patients, setPatients] = useState([]);
   const [filteredPatients, setFilteredPatients] = useState([]);
@@ -13,7 +12,9 @@ export default function AdminReports() {
   const [medicines, setMedicines] = useState([]);
   const [selectedPatient, setSelectedPatient] = useState(null);
   const [showDetailsModal, setShowDetailsModal] = useState(false);
-  
+  const [monthlyRevenueData, setMonthlyRevenueData] = useState([]);
+const [yearlyRevenueData, setYearlyRevenueData] = useState([]);
+const [selectedYear, setSelectedYear] = useState(new Date().getFullYear());
   // NEW: Backend-calculated revenue data
   const [dailyRevenueData, setDailyRevenueData] = useState([]);
   const [overallRevenueStats, setOverallRevenueStats] = useState({
@@ -54,6 +55,13 @@ export default function AdminReports() {
     fetchDailyRevenue();
   }, [patients, filters.startDate, filters.endDate]);
 
+  useEffect(() => {
+  fetchMonthlyRevenue();
+}, [selectedYear]);
+
+useEffect(() => {
+  fetchYearlyRevenue();
+}, []);
   const fetchAllData = async () => {
     try {
       setLoading(true);
@@ -103,6 +111,78 @@ export default function AdminReports() {
       setRevenueLoading(false);
     }
   };
+  // Fetch monthly revenue
+const fetchMonthlyRevenue = async () => {
+  try {
+    const params = new URLSearchParams();
+    if (selectedYear) params.append('year', selectedYear);
+    
+    const response = await api.get(`/patients/revenue/monthly?${params.toString()}`);
+    setMonthlyRevenueData(response.data.monthlyRevenue || []);
+  } catch (error) {
+    console.error('Error fetching monthly revenue:', error);
+    toast.error('Failed to load monthly revenue data');
+  }
+};
+
+// Fetch yearly revenue
+const fetchYearlyRevenue = async () => {
+  try {
+    const response = await api.get('/patients/revenue/yearly');
+    setYearlyRevenueData(response.data.yearlyRevenue || []);
+  } catch (error) {
+    console.error('Error fetching yearly revenue:', error);
+    toast.error('Failed to load yearly revenue data');
+  }
+};
+
+// Download monthly report
+const downloadMonthlyReport = () => {
+  const csvContent = [
+    ['Month', 'Patients', 'Total Revenue (Rs.)', 'Average/Patient (Rs.)'],
+    ...monthlyRevenueData.map(m => [
+      new Date(m.month).toLocaleDateString('en-US', { month: 'long', year: 'numeric' }),
+      m.patientCount,
+      m.totalRevenue.toFixed(2),
+      m.averageRevenue.toFixed(2)
+    ])
+  ].map(row => row.join(',')).join('\n');
+
+  const blob = new Blob([csvContent], { type: 'text/csv' });
+  const url = window.URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `monthly-revenue-${selectedYear}.csv`;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  window.URL.revokeObjectURL(url);
+  toast.success('Monthly report downloaded');
+};
+
+// Download yearly report
+const downloadYearlyReport = () => {
+  const csvContent = [
+    ['Year', 'Patients', 'Total Revenue (Rs.)', 'Average/Patient (Rs.)'],
+    ...yearlyRevenueData.map(y => [
+      new Date(y.year).getFullYear(),
+      y.patientCount,
+      y.totalRevenue.toFixed(2),
+      y.averageRevenue.toFixed(2)
+    ])
+  ].map(row => row.join(',')).join('\n');
+
+  const blob = new Blob([csvContent], { type: 'text/csv' });
+  const url = window.URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `yearly-revenue-report.csv`;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  window.URL.revokeObjectURL(url);
+  toast.success('Yearly report downloaded');
+};
 
   const applyFilters = () => {
     let filtered = [...patients];
@@ -600,6 +680,94 @@ export default function AdminReports() {
               )}
             </div>
           </div>
+          {/* Monthly Revenue Section */}
+<div className="card">
+  <div className="card-header flex flex-col md:flex-row md:items-center justify-between gap-3">
+    <div className="flex items-center space-x-2">
+      <FaCalendarAlt className="text-blue-600 text-base md:text-lg" />
+      <h3 className="text-base md:text-lg font-bold">Monthly Revenue</h3>
+    </div>
+    <div className="flex gap-2 flex-wrap">
+      <input 
+        type="number" 
+        placeholder="Year" 
+        value={selectedYear} 
+        onChange={(e) => setSelectedYear(e.target.value)}
+        className="input-field w-24 text-sm"
+      />
+      <button onClick={fetchMonthlyRevenue} className="btn-primary text-xs md:text-sm">
+        Load
+      </button>
+      <button onClick={downloadMonthlyReport} className="btn-secondary text-xs md:text-sm flex items-center gap-1">
+        <FaFileDownload /> CSV
+      </button>
+    </div>
+  </div>
+  <div className="card-body">
+    <div className="overflow-x-auto">
+      <table className="w-full" style={{ minWidth: '600px' }}>
+        <thead className="bg-gradient-to-r from-blue-600 to-indigo-600 text-white">
+          <tr>
+            <th className="px-4 py-3 text-left">Month</th>
+            <th className="px-4 py-3 text-left">Patients</th>
+            <th className="px-4 py-3 text-left">Total Revenue</th>
+            <th className="px-4 py-3 text-left">Avg/Patient</th>
+          </tr>
+        </thead>
+        <tbody className="divide-y divide-gray-200">
+          {monthlyRevenueData.map((month, idx) => (
+            <tr key={idx} className="hover:bg-blue-50">
+              <td className="px-4 py-3 font-semibold">
+                {new Date(month.month).toLocaleDateString('en-US', { month: 'long', year: 'numeric' })}
+              </td>
+              <td className="px-4 py-3">{month.patientCount}</td>
+              <td className="px-4 py-3 text-green-600 font-bold">Rs. {month.totalRevenue.toFixed(2)}</td>
+              <td className="px-4 py-3">Rs. {month.averageRevenue.toFixed(2)}</td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+{/* Yearly Revenue Section */}
+<div className="card">
+  <div className="card-header flex flex-col md:flex-row md:items-center justify-between gap-3">
+    <div className="flex items-center space-x-2">
+      <FaChartLine className="text-purple-600 text-base md:text-lg" />
+      <h3 className="text-base md:text-lg font-bold">Yearly Revenue</h3>
+    </div>
+    <button onClick={downloadYearlyReport} className="btn-primary text-xs md:text-sm flex items-center gap-1">
+      <FaFileDownload /> Download CSV
+    </button>
+  </div>
+  <div className="card-body">
+    <div className="overflow-x-auto">
+      <table className="w-full" style={{ minWidth: '600px' }}>
+        <thead className="bg-gradient-to-r from-purple-600 to-indigo-600 text-white">
+          <tr>
+            <th className="px-4 py-3 text-left">Year</th>
+            <th className="px-4 py-3 text-left">Patients</th>
+            <th className="px-4 py-3 text-left">Total Revenue</th>
+            <th className="px-4 py-3 text-left">Avg/Patient</th>
+          </tr>
+        </thead>
+        <tbody className="divide-y divide-gray-200">
+          {yearlyRevenueData.map((year, idx) => (
+            <tr key={idx} className="hover:bg-purple-50">
+              <td className="px-4 py-3 font-semibold text-lg">
+                {new Date(year.year).getFullYear()}
+              </td>
+              <td className="px-4 py-3">{year.patientCount}</td>
+              <td className="px-4 py-3 text-green-600 font-bold text-lg">Rs. {year.totalRevenue.toFixed(2)}</td>
+              <td className="px-4 py-3">Rs. {year.averageRevenue.toFixed(2)}</td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
 
           {/* Age Distribution */}
           <div className="card">
@@ -784,10 +952,26 @@ export default function AdminReports() {
                     <p className="text-xs md:text-sm text-gray-600">Contact</p>
                     <p className="font-semibold text-sm md:text-base">{selectedPatient.contactNumber || 'N/A'}</p>
                   </div>
-                  <div>
-                    <p className="text-xs md:text-sm text-gray-600">Amount Charged</p>
-                    <p className="font-semibold text-sm md:text-base text-green-600">Rs. {selectedPatient.amountCharged || '0.00'}</p>
-                  </div>
+                 {/* Replace single amount line with this: */}
+<div className="bg-blue-50 p-3 rounded-lg">
+  <p className="text-xs md:text-sm font-semibold text-gray-700 mb-2">Cost Breakdown</p>
+  <div className="space-y-1 text-sm">
+    <div className="flex justify-between">
+      <span>Medicines:</span>
+      <span className="font-semibold">
+        Rs. {((selectedPatient.amountCharged || 0) - (selectedPatient.extraExpenses || 0)).toFixed(2)}
+      </span>
+    </div>
+    <div className="flex justify-between">
+      <span>Extra Expenses:</span>
+      <span className="font-semibold">Rs. {(selectedPatient.extraExpenses || 0).toFixed(2)}</span>
+    </div>
+    <div className="flex justify-between border-t border-blue-300 pt-1 font-bold text-base">
+      <span>Total:</span>
+      <span className="text-green-600">Rs. {(selectedPatient.amountCharged || 0).toFixed(2)}</span>
+    </div>
+  </div>
+</div>
                   <div>
                     <p className="text-xs md:text-sm text-gray-600">Visit Date</p>
                     <p className="font-semibold text-sm md:text-base">

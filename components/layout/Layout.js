@@ -36,10 +36,21 @@ const Layout = ({ children }) => {
           sidebarOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'
         }`}
       >
-        {/* Logo */}
+        {/* Logo - UPDATED WITH CLINIC LOGO */}
         <div className="p-4 md:p-6 border-b border-primary-700">
           <div className="flex items-center space-x-2 md:space-x-3">
-            <div className="medical-cross text-white w-8 h-8 md:w-10 md:h-10"></div>
+            <div className="w-8 h-8 md:w-10 md:h-10 flex-shrink-0 bg-white rounded-lg p-1 shadow-lg">
+              <img 
+                src="/cliniclogo.png" 
+                alt="Clinic Logo" 
+                className="w-full h-full object-contain"
+                onError={(e) => {
+                  // Fallback to medical cross if logo not found
+                  e.target.style.display = 'none';
+                  e.target.parentElement.innerHTML = '<div class="medical-cross text-primary-600 w-full h-full"></div>';
+                }}
+              />
+            </div>
             <div>
               <h1 className="text-lg md:text-xl font-bold font-display">Begum Sahib</h1>
               <p className="text-[10px] md:text-xs text-primary-200">Noor Zaman Dispensary</p>
@@ -146,7 +157,7 @@ const Layout = ({ children }) => {
               © 2024 Begum Sahib Noor Zaman Sahulat Dispensary. All rights reserved.
             </p>
             <p className="text-[10px] md:text-xs text-gray-500">
-              Version 1.0.0
+              Version 2.0.0
             </p>
           </div>
         </footer>

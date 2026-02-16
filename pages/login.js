@@ -30,16 +30,25 @@ export default function Login() {
         </div>
 
         <div className="w-full max-w-md relative z-10">
-          {/* Logo and Title */}
+          {/* Logo and Title - UPDATED WITH CLINIC LOGO */}
           <div className="text-center mb-8">
-            <div className="inline-flex items-center justify-center w-20 h-20 bg-white rounded-full shadow-2xl mb-4">
-              <FaHospital className="text-primary-600 text-4xl" />
+            <div className="inline-flex items-center justify-center w-16 h-16 md:w-24 md:h-24 bg-white rounded-full shadow-2xl mb-4 p-3 md:p-4">
+              <img 
+                src="/cliniclogo.png" 
+                alt="Clinic Logo" 
+                className="w-full h-full object-contain"
+                onError={(e) => {
+                  // Fallback to hospital icon if logo not found
+                  e.target.style.display = 'none';
+                  e.target.parentElement.innerHTML = '<svg class="text-primary-600 w-full h-full" fill="currentColor" viewBox="0 0 20 20"><path d="M10.707 2.293a1 1 0 00-1.414 0l-7 7a1 1 0 001.414 1.414L4 10.414V17a1 1 0 001 1h2a1 1 0 001-1v-2a1 1 0 011-1h2a1 1 0 011 1v2a1 1 0 001 1h2a1 1 0 001-1v-6.586l.293.293a1 1 0 001.414-1.414l-7-7z"></path></svg>';
+                }}
+              />
             </div>
-            <h1 className="text-3xl font-bold text-white mb-2 font-display">
+            <h1 className="text-2xl md:text-3xl font-bold text-white mb-2 font-display">
               Begum Sahib Noor Zaman
             </h1>
-            <p className="text-primary-100 text-lg">Sahulat Dispensary</p>
-            <div className="mt-4 inline-block px-4 py-2 bg-white bg-opacity-20 rounded-full text-white text-sm backdrop-blur-sm">
+            <p className="text-primary-100 text-base md:text-lg">Sahulat Dispensary</p>
+            <div className="mt-4 inline-block px-4 py-2 bg-white bg-opacity-20 rounded-full text-white text-xs md:text-sm backdrop-blur-sm">
               Clinic Management System
             </div>
           </div>
@@ -107,7 +116,12 @@ export default function Login() {
               </button>
             </form>
 
-           
+            {/* Info Footer */}
+            <div className="bg-gray-50 px-6 py-4 border-t border-gray-100">
+              <p className="text-center text-xs text-gray-600">
+                🔒 Your credentials are encrypted and secure
+              </p>
+            </div>
           </div>
 
           {/* Footer */}
