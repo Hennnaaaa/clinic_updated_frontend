@@ -3,7 +3,7 @@ import { useRouter } from 'next/router';
 import Link from 'next/link';
 import { 
   FaHome, FaPills, FaUser, FaSignOutAlt, FaChartBar, 
-  FaUserMd, FaHospital, FaBars, FaTimes 
+  FaUserMd, FaHospital, FaBars, FaTimes, FaMoneyBillWave  // Added
 } from 'react-icons/fa';
 import { useState } from 'react';
 
@@ -17,6 +17,8 @@ const Layout = ({ children }) => {
     { icon: FaPills, label: 'Medicine Inventory', path: '/admin/medicines' },
     { icon: FaUser, label: 'Patients', path: '/admin/patients' },
     { icon: FaChartBar, label: 'Reports', path: '/admin/reports' },
+    // Admin menu
+{ icon: FaMoneyBillWave, label: 'Expenses', path: '/admin/monthly-expenses' }
   ];
 
   const doctorMenuItems = [
@@ -24,6 +26,8 @@ const Layout = ({ children }) => {
     { icon: FaUser, label: 'New Patient', path: '/doctor/new-patient' },
     { icon: FaUserMd, label: 'My Patients', path: '/doctor/patients' },
     { icon: FaPills, label: 'Medicines', path: '/doctor/medicines' },
+// Doctor menu  
+{ icon: FaMoneyBillWave, label: 'Expenses', path: '/doctor/monthly-expenses' }
   ];
 
   const menuItems = isAdmin ? adminMenuItems : doctorMenuItems;
