@@ -21,7 +21,7 @@ export default function NewPatient() {
     prescribedMedicines: [],
     doctorNotes: '',
     followUpDate: '',
-    amountCharged: 0
+    amountCharged: ''  // FIXED: Empty string instead of 0
   });
   
   const [selectedMedicine, setSelectedMedicine] = useState({ 
@@ -173,6 +173,7 @@ export default function NewPatient() {
       // Send exact decimal quantities to backend
       const dataToSend = {
         ...formData,
+        amountCharged: formData.amountCharged === '' ? 0 : Number(formData.amountCharged),  // FIXED: Convert properly
         prescribedMedicines: formData.prescribedMedicines.map(med => ({
           medicineId: med.medicineId,
           name: med.name,
@@ -452,10 +453,23 @@ export default function NewPatient() {
                 )}
               </div>
 
-              {/* Amount Charged */}
+              {/* Amount Charged - COMPLETELY FIXED */}
               <div className="bg-gradient-to-br from-green-50 to-emerald-50 p-3 md:p-4 rounded-lg border-2 border-green-300">
                 <label className="label text-base md:text-lg font-bold text-green-900">Amount Charged (Rs.)</label>
-                <input type="number" step="0.01" min="0" value={formData.amountCharged} onChange={(e) => setFormData({...formData, amountCharged: parseFloat(e.target.value) || 0})} className="input-field text-lg md:text-xl font-bold" placeholder="0.00" />
+                <input 
+                  type="text"
+                  inputMode="decimal"
+                  value={formData.amountCharged} 
+                  onChange={(e) => {
+                    const value = e.target.value;
+                    // Allow only numbers and decimal point
+                    if (value === '' || /^\d*\.?\d*$/.test(value)) {
+                      setFormData({...formData, amountCharged: value});
+                    }
+                  }} 
+                  className="input-field text-lg md:text-xl font-bold" 
+                  placeholder="0.00" 
+                />
               </div>
 
               <div>
