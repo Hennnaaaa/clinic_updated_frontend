@@ -5,6 +5,29 @@ import ProtectedRoute from '../../components/common/ProtectedRoute';
 import api from '../../utils/api';
 import { toast } from 'react-toastify';
 import { FaFilter, FaFileDownload, FaEye, FaTimes, FaChevronLeft, FaChevronRight, FaMoneyBillWave, FaCalendarDay, FaCalendarAlt, FaChartLine } from 'react-icons/fa';
+
+const formatMonthLabel = (monthValue) => {
+  const str = String(monthValue);
+  const match = str.match(/^(\d{4})-(\d{2})/);
+  if (match) {
+    return new Date(parseInt(match[1], 10), parseInt(match[2], 10) - 1, 1)
+      .toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
+  }
+  return str;
+};
+
+const formatYearLabel = (yearValue) => {
+  if (typeof yearValue === 'number' && yearValue > 1000 && yearValue < 9999) return yearValue;
+  const match = String(yearValue).match(/^(\d{4})/);
+  return match ? parseInt(match[1], 10) : yearValue;
+};
+
+const formatVisitDate = (visitDate) => {
+  if (!visitDate) return 'N/A';
+  const str = String(visitDate);
+  const safe = /^\d{4}-\d{2}-\d{2}$/.test(str) ? str + 'T12:00:00' : str;
+  return new Date(safe).toLocaleDateString();
+};
 export default function AdminReports() {
   const [patients, setPatients] = useState([]);
   const [filteredPatients, setFilteredPatients] = useState([]);
@@ -141,7 +164,7 @@ const downloadMonthlyReport = () => {
   const csvContent = [
     ['Month', 'Patients', 'Total Revenue (Rs.)', 'Average/Patient (Rs.)'],
     ...monthlyRevenueData.map(m => [
-      new Date(m.month).toLocaleDateString('en-US', { month: 'long', year: 'numeric' }),
+     formatMonthLabel(m.month),
       m.patientCount,
       m.totalRevenue.toFixed(2),
       m.averageRevenue.toFixed(2)
@@ -165,7 +188,7 @@ const downloadYearlyReport = () => {
   const csvContent = [
     ['Year', 'Patients', 'Total Revenue (Rs.)', 'Average/Patient (Rs.)'],
     ...yearlyRevenueData.map(y => [
-      new Date(y.year).getFullYear(),
+      formatYearLabel(y.year),
       y.patientCount,
       y.totalRevenue.toFixed(2),
       y.averageRevenue.toFixed(2)
@@ -368,7 +391,7 @@ const downloadYearlyReport = () => {
         p.amountCharged || '0.00',
         p.prescribedMedicines ? p.prescribedMedicines.map(m => `${m.name} (${m.dosage || m.quantity + ' ' + (m.unit || '')})`).join('; ') : 'N/A',
         p.doctor?.fullName || 'N/A',
-        new Date(p.visitDate).toLocaleDateString()
+        formatVisitDate(p.visitDate)
       ])
     ].map(row => row.join(',')).join('\n');
 
@@ -718,7 +741,7 @@ const downloadYearlyReport = () => {
           {monthlyRevenueData.map((month, idx) => (
             <tr key={idx} className="hover:bg-blue-50">
               <td className="px-4 py-3 font-semibold">
-                {new Date(month.month).toLocaleDateString('en-US', { month: 'long', year: 'numeric' })}
+                {formatMonthLabel(month.month)}
               </td>
               <td className="px-4 py-3">{month.patientCount}</td>
               <td className="px-4 py-3 text-green-600 font-bold">Rs. {month.totalRevenue.toFixed(2)}</td>
@@ -756,7 +779,7 @@ const downloadYearlyReport = () => {
           {yearlyRevenueData.map((year, idx) => (
             <tr key={idx} className="hover:bg-purple-50">
               <td className="px-4 py-3 font-semibold text-lg">
-                {new Date(year.year).getFullYear()}
+                {formatYearLabel(year.year)}
               </td>
               <td className="px-4 py-3">{year.patientCount}</td>
               <td className="px-4 py-3 text-green-600 font-bold text-lg">Rs. {year.totalRevenue.toFixed(2)}</td>
@@ -866,7 +889,7 @@ const downloadYearlyReport = () => {
                           Rs. {patient.amountCharged || '0.00'}
                         </td>
                         <td className="px-2 md:px-4 py-2 md:py-3 text-xs md:text-sm">
-                          {new Date(patient.visitDate).toLocaleDateString()}
+                          {formatVisitDate(patient.visitDate)}
                         </td>
                         <td className="px-2 md:px-4 py-2 md:py-3">
                           <button
@@ -959,23 +982,23 @@ const downloadYearlyReport = () => {
     <div className="flex justify-between">
       <span>Medicines:</span>
       <span className="font-semibold">
-        Rs. {((selectedPatient.amountCharged || 0) - (selectedPatient.extraExpenses || 0)).toFixed(2)}
+        Rs. {(Number(selectedPatient.amountCharged || 0) - Number(selectedPatient.extraExpenses || 0)).toFixed(2)}
       </span>
     </div>
     <div className="flex justify-between">
       <span>Extra Expenses:</span>
-      <span className="font-semibold">Rs. {(selectedPatient.extraExpenses || 0).toFixed(2)}</span>
+      <span className="font-semibold">Rs. {Number(selectedPatient.extraExpenses || 0).toFixed(2)}</span>
     </div>
     <div className="flex justify-between border-t border-blue-300 pt-1 font-bold text-base">
       <span>Total:</span>
-      <span className="text-green-600">Rs. {(selectedPatient.amountCharged || 0).toFixed(2)}</span>
+      <span className="text-green-600">Rs. {Number(selectedPatient.amountCharged || 0).toFixed(2)}</span>
     </div>
   </div>
 </div>
                   <div>
                     <p className="text-xs md:text-sm text-gray-600">Visit Date</p>
                     <p className="font-semibold text-sm md:text-base">
-                      {new Date(selectedPatient.visitDate).toLocaleDateString()}
+                      {formatVisitDate(selectedPatient.visitDate)}
                     </p>
                   </div>
                   {selectedPatient.doctor && (
