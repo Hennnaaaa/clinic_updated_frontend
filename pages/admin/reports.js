@@ -40,6 +40,9 @@ const [yearlyRevenueData, setYearlyRevenueData] = useState([]);
 const [selectedYear, setSelectedYear] = useState(new Date().getFullYear());
   // NEW: Backend-calculated revenue data
   const [dailyRevenueData, setDailyRevenueData] = useState([]);
+  const [medicineReportData, setMedicineReportData] = useState([]);
+const [selectedMedicine, setSelectedMedicine] = useState('');
+const [medicineReportLoading, setMedicineReportLoading] = useState(false);
   const [overallRevenueStats, setOverallRevenueStats] = useState({
     totalPatients: 0,
     totalRevenue: 0,
@@ -158,7 +161,48 @@ const fetchYearlyRevenue = async () => {
     toast.error('Failed to load yearly revenue data');
   }
 };
+const fetchMedicineMonthlyReport = async () => {
+  if (!selectedMedicine) {
+    toast.error('Please select a medicine first');
+    return;
+  }
+  try {
+    setMedicineReportLoading(true);
+    const params = new URLSearchParams();
+    params.append('medicineName', selectedMedicine);
+    const response = await api.get(`/patients/revenue/medicine-monthly?${params.toString()}`);
+    setMedicineReportData(response.data.medicineMonthlyReport || []);
+  } catch (error) {
+    console.error('Error fetching medicine report:', error);
+    toast.error('Failed to load medicine report');
+  } finally {
+    setMedicineReportLoading(false);
+  }
+};
 
+const downloadMedicineReport = () => {
+  if (medicineReportData.length === 0) {
+    toast.error('No data to download');
+    return;
+  }
+  const csvContent = [
+    ['Month', 'Patients Prescribed', 'Total Quantity Dispensed', 'Total Revenue (Rs.)'],
+    ...medicineReportData.map(row => [
+      formatMonthLabel(row.month),
+      row.patientCount,
+      row.totalQuantity,
+      Number(row.totalRevenue || 0).toFixed(2)
+    ])
+  ].map(row => row.join(',')).join('\n');
+  const blob = new Blob([csvContent], { type: 'text/csv' });
+  const url = window.URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `medicine-report-${selectedMedicine}.csv`;
+  document.body.appendChild(a); a.click(); document.body.removeChild(a);
+  window.URL.revokeObjectURL(url);
+  toast.success('Medicine report downloaded');
+};
 // Download monthly report
 const downloadMonthlyReport = () => {
   const csvContent = [
@@ -791,7 +835,97 @@ const downloadYearlyReport = () => {
     </div>
   </div>
 </div>
+{/* Monthly Medicine Report */}
+<div className="card">
+  <div className="card-header flex flex-col md:flex-row md:items-center justify-between gap-3">
+    <div className="flex items-center space-x-2">
+      <FaCalendarAlt className="text-green-600 text-base md:text-lg" />
+      <h3 className="text-base md:text-lg font-bold">Monthly Medicine Report</h3>
+    </div>
+    <button
+      onClick={downloadMedicineReport}
+      className="btn-secondary text-xs md:text-sm flex items-center gap-1"
+      disabled={medicineReportLoading || medicineReportData.length === 0}
+    >
+      <FaFileDownload /> Download CSV
+    </button>
+  </div>
+  <div className="card-body">
+    {/* Medicine selector */}
+    <div className="flex gap-2 flex-wrap mb-4">
+      <select
+        value={selectedMedicine}
+        onChange={(e) => setSelectedMedicine(e.target.value)}
+        className="input-field text-sm flex-1 min-w-[200px]"
+      >
+        <option value="">-- Select a Medicine --</option>
+        {medicines.map((med, idx) => (
+          <option key={idx} value={med.name}>{med.name}</option>
+        ))}
+      </select>
+      <button
+        onClick={fetchMedicineMonthlyReport}
+        className="btn-primary text-xs md:text-sm"
+        disabled={medicineReportLoading}
+      >
+        {medicineReportLoading ? 'Loading...' : 'Load Report'}
+      </button>
+    </div>
 
+    {/* Table */}
+    {medicineReportData.length > 0 ? (
+      <div className="overflow-x-auto">
+        <table className="w-full" style={{ minWidth: '600px' }}>
+          <thead className="bg-gradient-to-r from-green-600 to-teal-600 text-white">
+            <tr>
+              <th className="px-4 py-3 text-left">Month</th>
+              <th className="px-4 py-3 text-left">Patients Prescribed</th>
+              <th className="px-4 py-3 text-left">Total Qty Dispensed</th>
+              <th className="px-4 py-3 text-left">Total Revenue</th>
+            </tr>
+          </thead>
+          <tbody className="divide-y divide-gray-200">
+            {medicineReportData.map((row, idx) => (
+              <tr key={idx} className="hover:bg-green-50">
+                <td className="px-4 py-3 font-semibold">{formatMonthLabel(row.month)}</td>
+                <td className="px-4 py-3">
+                  <span className="badge badge-primary">{row.patientCount} patients</span>
+                </td>
+                <td className="px-4 py-3 font-semibold">{row.totalQuantity}</td>
+                <td className="px-4 py-3 text-green-600 font-bold">
+                  Rs. {Number(row.totalRevenue || 0).toFixed(2)}
+                </td>
+              </tr>
+            ))}
+          </tbody>
+          {/* Totals row */}
+          <tfoot className="bg-green-100 font-bold">
+            <tr>
+              <td className="px-4 py-3">TOTAL</td>
+              <td className="px-4 py-3">
+                {medicineReportData.reduce((sum, r) => sum + r.patientCount, 0)} patients
+              </td>
+              <td className="px-4 py-3">
+                {medicineReportData.reduce((sum, r) => sum + r.totalQuantity, 0)}
+              </td>
+              <td className="px-4 py-3 text-green-700">
+                Rs. {medicineReportData.reduce((sum, r) => sum + Number(r.totalRevenue || 0), 0).toFixed(2)}
+              </td>
+            </tr>
+          </tfoot>
+        </table>
+      </div>
+    ) : (
+      !medicineReportLoading && (
+        <div className="text-center py-8">
+          <p className="text-gray-500 text-sm md:text-base">
+            {selectedMedicine ? 'No data found for this medicine' : 'Select a medicine and click Load Report'}
+          </p>
+        </div>
+      )
+    )}
+  </div>
+</div>
           {/* Age Distribution */}
           <div className="card">
             <div className="card-header">
