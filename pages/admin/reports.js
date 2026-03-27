@@ -53,6 +53,8 @@ const [medicineReportLoading, setMedicineReportLoading] = useState(false);
   // Pagination
   const [currentPage, setCurrentPage] = useState(1);
   const [patientsPerPage] = useState(20);
+  const [medicinesMonthlyData, setMedicinesMonthlyData] = useState([]);
+const [medicinesMonthlyYear, setMedicinesMonthlyYear] = useState(new Date().getFullYear());
   
   // Filter states
   const [filters, setFilters] = useState({
@@ -159,6 +161,17 @@ const fetchYearlyRevenue = async () => {
   } catch (error) {
     console.error('Error fetching yearly revenue:', error);
     toast.error('Failed to load yearly revenue data');
+  }
+};
+const fetchMedicinesMonthly = async () => {
+  try {
+    const params = new URLSearchParams();
+    if (medicinesMonthlyYear) params.append('year', medicinesMonthlyYear);
+    const response = await api.get(`/patients/revenue/medicines-monthly?${params.toString()}`);
+    setMedicinesMonthlyData(response.data.monthlyMedicineReport || []);
+  } catch (error) {
+    console.error('Error fetching medicines monthly:', error);
+    toast.error('Failed to load monthly medicine data');
   }
 };
 const fetchMedicineMonthlyReport = async () => {
@@ -833,6 +846,70 @@ const downloadYearlyReport = () => {
         </tbody>
       </table>
     </div>
+  </div>
+</div>
+{/* Monthly Medicines Prescribed */}
+<div className="card">
+  <div className="card-header flex flex-col md:flex-row md:items-center justify-between gap-3">
+    <div className="flex items-center space-x-2">
+      <FaCalendarAlt className="text-teal-600 text-base md:text-lg" />
+      <h3 className="text-base md:text-lg font-bold">Medicines Prescribed Per Month</h3>
+    </div>
+    <div className="flex gap-2 flex-wrap">
+      <input
+        type="number"
+        placeholder="Year"
+        value={medicinesMonthlyYear}
+        onChange={(e) => setMedicinesMonthlyYear(e.target.value)}
+        className="input-field w-24 text-sm"
+      />
+      <button onClick={fetchMedicinesMonthly} className="btn-primary text-xs md:text-sm">
+        Load
+      </button>
+    </div>
+  </div>
+  <div className="card-body">
+    {medicinesMonthlyData.length > 0 ? (
+      <div className="overflow-x-auto">
+        <table className="w-full" style={{ minWidth: '400px' }}>
+          <thead className="bg-gradient-to-r from-teal-600 to-cyan-600 text-white">
+            <tr>
+              <th className="px-4 py-3 text-left">Month</th>
+              <th className="px-4 py-3 text-left">Total Patients</th>
+              <th className="px-4 py-3 text-left">Total Medicines Prescribed</th>
+            </tr>
+          </thead>
+          <tbody className="divide-y divide-gray-200">
+            {medicinesMonthlyData.map((row, idx) => (
+              <tr key={idx} className="hover:bg-teal-50">
+                <td className="px-4 py-3 font-semibold">{formatMonthLabel(row.month)}</td>
+                <td className="px-4 py-3">
+                  <span className="badge badge-primary">{row.totalPatients} patients</span>
+                </td>
+                <td className="px-4 py-3">
+                  <span className="text-lg font-bold text-teal-600">{row.totalMedicinesPrescribed}</span>
+                </td>
+              </tr>
+            ))}
+          </tbody>
+          <tfoot className="bg-teal-100 font-bold">
+            <tr>
+              <td className="px-4 py-3">TOTAL</td>
+              <td className="px-4 py-3">
+                {medicinesMonthlyData.reduce((sum, r) => sum + r.totalPatients, 0)} patients
+              </td>
+              <td className="px-4 py-3 text-teal-700 text-lg">
+                {medicinesMonthlyData.reduce((sum, r) => sum + r.totalMedicinesPrescribed, 0)}
+              </td>
+            </tr>
+          </tfoot>
+        </table>
+      </div>
+    ) : (
+      <div className="text-center py-8">
+        <p className="text-gray-500 text-sm md:text-base">Select a year and click Load</p>
+      </div>
+    )}
   </div>
 </div>
 {/* Monthly Medicine Report */}
